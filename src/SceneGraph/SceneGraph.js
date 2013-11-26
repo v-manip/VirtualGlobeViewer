@@ -365,26 +365,32 @@ SceneGraph.Mesh.prototype.render = function(gl,program)
 		}
 		this.glIndexBuffer = ib;
         
-        if (this.texCoordArray) {
-            var tb = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, tb);
-            gl.bufferData(gl.ARRAY_BUFFER, this.texCoordArray, gl.STATIC_DRAW);		
-		    this.glTexCoordBuffer = tb;
+        // Generate dummy texcoords for now, if none are given
+        // FIXXME: Depending on the material a corresponding shader should be activated. Currently the
+        // global shader expects an activated texture and texture coordinates. Find a reasonable way to
+        // control the shader from within here!
+        if (!this.texCoordArray) {
+            var texCoords = [];
+            for (var idx=0; idx<this.indices.length*2; ++idx) {
+                texCoords.push(0);
+            }
+            this.texCoordArray = new Float32Array(texCoords);
         }
+        
+        var tb = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, tb);
+        gl.bufferData(gl.ARRAY_BUFFER, this.texCoordArray, gl.STATIC_DRAW);		
+		this.glTexCoordBuffer = tb;
 	}
         
 	// Bind the vertex buffer
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.glVertexBuffer);
 	gl.vertexAttribPointer(program.attributes['vertex'], 3, gl.FLOAT, false, this.numElements * 4, 0);
 
-    if (this.glTexCoordBuffer) {
-        //gl.uniform1i(this.program.uniforms["hasTexture"], 1);
-	    gl.bindBuffer(gl.ARRAY_BUFFER, this.glTexCoordBuffer);
-	    gl.vertexAttribPointer(program.attributes['tcoord'], 2, gl.FLOAT, false, 2 * 4, 0);
-    } else {
-        //gl.uniform1i(program.uniforms["hasTexture"], 0);
-    }
-    
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.glTexCoordBuffer);
+	gl.vertexAttribPointer(program.attributes['tcoord'], 2, gl.FLOAT, false, 2 * 4, 0);
+
+    // FIXXME: add support for interlaced arrays and the ability to switch between interlaced and distinct arrays!
 // 	if ( this.numElements == 5 || this.texCoordArray)
 // 	{
 // 		gl.vertexAttribPointer(program.attributes['tcoord'], 2, gl.FLOAT, false, this.numElements * 4, 12);

@@ -45,15 +45,10 @@ var SceneGraphRenderer = function(renderContext,node)
 	varying vec2 texCoord; \n\
 	uniform vec4 diffuse; \n\
 	uniform sampler2D texture;\n\
-    //uniform bool hasTexture; \n\
 	\n\
 	void main(void) \n\
 	{ \n\
-        //if (hasTexture) { \n\
 		    gl_FragColor = diffuse * texture2D(texture, texCoord); \n\
-        //} else { \n\
-        //    gl_FragColor = diffuse; \n\
-        //} \n\
 	} \n\
 	";
 	
