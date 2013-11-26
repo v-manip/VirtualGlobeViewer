@@ -302,12 +302,18 @@ SceneGraph.Mesh = function()
 {
 	this.vertices = null;
 	this.indices = null;
+    
 	this.glVertexBuffer = null;
 	this.glIndexBuffer = null;
-	this.numElements = 0;
+    this.glTexCoordBuffer = null;
     
+    // FIXXME: make disposable!
     this.indexArray = null;
     this.vertexArray = null;
+    this.normalArray = null;
+    this.texCoordArray = null;
+    
+	this.numElements = 0;
     this.isLoaded = false;
 }
   
@@ -358,15 +364,31 @@ SceneGraph.Mesh.prototype.render = function(gl,program)
 			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), gl.STATIC_DRAW);
 		}
 		this.glIndexBuffer = ib;
+        
+        if (this.texCoordArray) {
+            var tb = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, tb);
+            gl.bufferData(gl.ARRAY_BUFFER, this.texCoordArray, gl.STATIC_DRAW);		
+		    this.glTexCoordBuffer = tb;
+        }
 	}
-	
+        
 	// Bind the vertex buffer
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.glVertexBuffer);
 	gl.vertexAttribPointer(program.attributes['vertex'], 3, gl.FLOAT, false, this.numElements * 4, 0);
-	if ( this.numElements == 5 )
-	{
-		gl.vertexAttribPointer(program.attributes['tcoord'], 2, gl.FLOAT, false, this.numElements * 4, 12);
-	}
+
+    if (this.glTexCoordBuffer) {
+        //gl.uniform1i(this.program.uniforms["hasTexture"], 1);
+	    gl.bindBuffer(gl.ARRAY_BUFFER, this.glTexCoordBuffer);
+	    gl.vertexAttribPointer(program.attributes['tcoord'], 2, gl.FLOAT, false, 2 * 4, 0);
+    } else {
+        //gl.uniform1i(program.uniforms["hasTexture"], 0);
+    }
+    
+// 	if ( this.numElements == 5 || this.texCoordArray)
+// 	{
+// 		gl.vertexAttribPointer(program.attributes['tcoord'], 2, gl.FLOAT, false, this.numElements * 4, 12);
+// 	}
 
 	// Bind the index buffer
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glIndexBuffer);
