@@ -50,7 +50,7 @@ var Globe = function(options)
 	
 	this.tileManager.addPostRenderer( this.vectorRendererManager );
 	
-	this.renderContext.renderer = this;
+	this.renderContext.addRenderer(this);
 	this.renderContext.requestFrame();
 }
 

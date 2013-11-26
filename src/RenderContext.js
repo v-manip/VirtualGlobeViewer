@@ -131,6 +131,8 @@ var RenderContext = function(options)
 	
 	var self = this;
 	this.frameCallback = function() { self.frame(); };
+    
+    this.renderer = [];
 }
 
 /**************************************************************************************************************/
@@ -142,6 +144,15 @@ var RenderContext = function(options)
 RenderContext.contextAttributes = {};
 
 /**************************************************************************************************************/
+
+/** 
+	Add a renderer. The renderer has to provide a 'render' method.
+    // FIXXME: add a Renderer base object!
+*/
+RenderContext.prototype.addRenderer = function(renderer)
+{	
+	this.renderer.push(renderer);
+}
 
 /** 
 	Request a frame
@@ -202,7 +213,9 @@ RenderContext.prototype.frame = function()
 	this.updateViewDependentProperties();
 			
 	// Call renderer
-	this.renderer.render();
+    for (var idx=0; idx<this.renderer.length; idx++) {
+	    this.renderer[idx].render();
+    }
 	
 	if (stats) stats.end("globalRenderTime");
 	
