@@ -184,7 +184,7 @@ SceneGraph.Material.prototype.bind = function(gl,program,renderer)
  *	@constructor Model Texture
  *	
  */
-SceneGraph.Texture = function(url)
+SceneGraph.Texture = function(url, doFlipY)
 {
 	var self = this;
 	this.glTexture = null;
@@ -195,6 +195,8 @@ SceneGraph.Texture = function(url)
 		console.log("Cannot load texture " + url);
 	}
 	this.image.src = url;
+    
+    this.doFlipY = (typeof doFlipY !== 'undefined') ? doFlipY : true;
 }
 
 var _isPowerOfTwo = function(x) 
@@ -229,7 +231,9 @@ SceneGraph.Texture.prototype.bind = function(gl)
 		{
 			this.glTexture = gl.createTexture();
 			gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            
+			var lastFlipY = gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL);
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.doFlipY);
 			
 			if (!_isPowerOfTwo(this.image.width) || !_isPowerOfTwo(this.image.height)) 
 			{
@@ -250,6 +254,8 @@ SceneGraph.Texture.prototype.bind = function(gl)
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.wrap[0]);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.wrap[1]);
 			gl.generateMipmap(gl.TEXTURE_2D);
+            
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, lastFlipY);
 		}
 	}
 }
