@@ -305,6 +305,10 @@ SceneGraph.Mesh = function()
 	this.glVertexBuffer = null;
 	this.glIndexBuffer = null;
 	this.numElements = 0;
+    
+    this.indexArray = null;
+    this.vertexArray = null;
+    this.isLoaded = false;
 }
   
 /**************************************************************************************************************/
@@ -331,16 +335,28 @@ SceneGraph.Mesh.prototype.dispose = function(renderContext)
  */
 SceneGraph.Mesh.prototype.render = function(gl,program)
 {
+	if (!this.isLoaded) {
+		return;
+	}
+
 	if (!this.glVertexBuffer)
 	{
 		var vb = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, vb);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+		if (this.vertexArray) {		
+			gl.bufferData(gl.ARRAY_BUFFER, this.vertexArray, gl.STATIC_DRAW);		
+		} else {
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+		}
 		this.glVertexBuffer = vb;
 		
 		var ib = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), gl.STATIC_DRAW);
+		if (this.indexArray) {
+			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indexArray, gl.STATIC_DRAW);			
+		} else {
+			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), gl.STATIC_DRAW);
+		}
 		this.glIndexBuffer = ib;
 	}
 	

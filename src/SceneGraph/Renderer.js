@@ -28,27 +28,29 @@ var SceneGraphRenderer = function(renderContext,node)
 {
 	var vertexShader = "\
 	attribute vec3 vertex; \n\
-	attribute vec2 tcoord; \n\
+	//attribute vec2 tcoord; \n\
 	uniform mat4 modelViewMatrix;\n\
 	uniform mat4 projectionMatrix;\n\
-	varying vec2 texCoord; \n\
+	//varying vec2 texCoord; \n\
 	\n\
 	void main(void)  \n\
 	{ \n\
 		gl_Position = projectionMatrix * modelViewMatrix * vec4(vertex.x, vertex.y, vertex.z, 1.0); \n\
-		texCoord = tcoord; \n\
+		//texCoord = tcoord; \n\
 	} \n\
 	";
 	
 	var fragmentShader = "\
 	precision lowp float; \n\
-	varying vec2 texCoord; \n\
-	uniform vec4 diffuse; \n\
+	//varying vec2 texCoord; \n\
+	//uniform vec4 diffuse; \n\
 	uniform sampler2D texture;\n\
 	\n\
 	void main(void) \n\
 	{ \n\
-		gl_FragColor = diffuse * texture2D(texture, texCoord); \n\
+		//gl_FragColor = diffuse * texture2D(texture, texCoord); \n\
+		//gl_FragColor = diffuse; \n\
+		gl_FragColor = vec4(1,0,0,1); \n\
 	} \n\
 	";
 	
