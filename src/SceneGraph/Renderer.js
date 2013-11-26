@@ -24,7 +24,7 @@ define(['../Program','../glMatrix'], function(Program) {
 /**
  *	@constructor SceneGraph Renderer
  */
-var SceneGraphRenderer = function(renderContext,node)
+var SceneGraphRenderer = function(renderContext,node, options)
 {
 	var vertexShader = "\
 	attribute vec3 vertex; \n\
@@ -70,11 +70,14 @@ var SceneGraphRenderer = function(renderContext,node)
 	
 	this.matrixStack = [];
 	
-	renderContext.minNear = 0.1;
-	renderContext.far = 5000;
-	renderContext.fov = 60;
+	renderContext.minNear = options.minNear || 0.1;
+	renderContext.far = options.far || 5000;
+	renderContext.fov = options.fov || 60;
 	
-	renderContext.renderer = this;
+    this.enableAlphaBlending = (typeof options.enableAlphaBlending !== 'undefined') ? options.enableAlphaBlending : true;
+    
+    // NOTE: The renderer is explicitly added to the RenderContext now.
+	//renderContext.renderer = this;
 	renderContext.requestFrame();	
 }
 
@@ -115,8 +118,14 @@ SceneGraphRenderer.prototype.render = function()
 	var gl = rc.gl;
 	
 	gl.disable(gl.CULL_FACE);
-	gl.enable(gl.DEPTH_TEST);
-	gl.depthFunc(gl.LESS);
+	if (this.enableAlphaBlending) {
+	    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+	    gl.enable(gl.BLEND);
+	} else {
+       	gl.enable(gl.DEPTH_TEST);
+    	gl.depthFunc(gl.LESS);	
+    }
+
 	gl.activeTexture(gl.TEXTURE0);
 
 	// Setup program
@@ -131,6 +140,11 @@ SceneGraphRenderer.prototype.render = function()
 	for ( var i = 0; i < this.nodes.length; i++ )
 	{
 		this.renderNode(this.nodes[i]);
+	}
+
+	if (this.enableAlphaBlending) {
+        gl.disable(gl.BLEND);
+        gl.enable(gl.DEPTH_TEST);
 	}
 }
 
