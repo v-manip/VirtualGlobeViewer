@@ -84,6 +84,7 @@ var Renderable = function(bucket)
 
 /**
  * Add a geometry to the renderbale
+ * @return if the geometry has been successfully added to the renderable
  */
 Renderable.prototype.add = function(geometry)
 {
@@ -92,6 +93,8 @@ Renderable.prototype.add = function(geometry)
 	// Hack : push away the point, only works for AstroWeb, sufficient for now
 	this.vertices.push( 0.99 * pt[0], 0.99 * pt[1], 0.99 * pt[2] );
 	this.vertexBufferDirty = true;
+	
+	return true;
 }
 
 /**************************************************************************************************************/

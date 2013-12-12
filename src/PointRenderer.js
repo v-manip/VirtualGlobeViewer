@@ -127,9 +127,9 @@ var PointRenderer = function(globe)
     this.program.createFromSource(vertexShader, fragmentShader);
 
 	var vertices = new Float32Array([-0.5, -0.5, 0.0,
-                    -0.5,  0.5, 0.0,
+                     0.5,  -0.5, 0.0,
                      0.5,  0.5, 0.0,
-                     0.5, -0.5, 0.0]);
+                     -0.5, 0.5, 0.0]);
 					 
 	var gl = this.renderContext.gl;
 	this.vertexBuffer = gl.createBuffer();
@@ -179,7 +179,7 @@ PointRenderer.prototype._buildTextureFromImage = function(bucket,image)
 /**
  * Renderable constructor for Point
  */
-var Renderable = function(bucket) 
+var PointRenderable = function(bucket) 
 {
 	this.bucket = bucket;
 	this.points = [];
@@ -188,9 +188,10 @@ var Renderable = function(bucket)
 /**************************************************************************************************************/
 
 /**
- * Add a geometry to the renderbale
+ * Add a geometry to the renderable
+ * @return if the geometry has been successfully added to the renderable
  */
-Renderable.prototype.add = function(geometry)
+PointRenderable.prototype.add = function(geometry)
 {
 	var posGeo = geometry['coordinates'];
 	var pos3d = CoordinateSystem.fromGeoTo3D( posGeo );
@@ -205,6 +206,9 @@ Renderable.prototype.add = function(geometry)
 		vertical: vertical,
 		geometry: geometry
 	});
+	
+	// Always add the geometry
+	return true;
 }
 
 /**************************************************************************************************************/
@@ -212,7 +216,7 @@ Renderable.prototype.add = function(geometry)
 /**
  * Remove a geometry from the renderable
  */
-Renderable.prototype.remove = function(geometry)
+PointRenderable.prototype.remove = function(geometry)
 {
 	for ( var j = 0; j < this.points.length; j++ )
 	{
@@ -230,7 +234,7 @@ Renderable.prototype.remove = function(geometry)
 /**
  * Dispose the renderable
  */
-Renderable.prototype.dispose = function(renderContext)
+PointRenderable.prototype.dispose = function(renderContext)
 {
 	// Nothing to do
 }
@@ -241,7 +245,7 @@ Renderable.prototype.dispose = function(renderContext)
 /**
 	Bucket constructor for PointRenderer
  */
-var Bucket = function(layer,style)
+var PointBucket = function(layer,style)
 {
 	this.layer = layer;
 	this.style = new FeatureStyle(style);
@@ -254,9 +258,9 @@ var Bucket = function(layer,style)
 /**
 	Create a renderable for this bucket
  */
-Bucket.prototype.createRenderable = function()
+PointBucket.prototype.createRenderable = function()
 {
-	return new Renderable(this);
+	return new PointRenderable(this);
 }
 
 /**************************************************************************************************************/
@@ -264,7 +268,7 @@ Bucket.prototype.createRenderable = function()
 /**
 	Check if a bucket is compatible
  */
-Bucket.prototype.isCompatible = function(style)
+PointBucket.prototype.isCompatible = function(style)
 {
 	return this.style.iconUrl == style.iconUrl
 		&& this.style.icon == style.icon
@@ -279,7 +283,7 @@ Bucket.prototype.isCompatible = function(style)
 PointRenderer.prototype.createBucket = function(layer,style)
 {
 	// Create a bucket
-	var bucket = new Bucket(layer,style);
+	var bucket = new PointBucket(layer,style);
 	
 	// Initialize bucket : create the texture	
 	if ( style['label'] )
@@ -409,7 +413,7 @@ PointRenderer.prototype.render = function(renderables,start,end)
  */
 PointRenderer.prototype.canApply = function(type,style)
 {
-	return type == "Point";
+	return type == "Point" && style.label;
 }
 
 /**************************************************************************************************************/

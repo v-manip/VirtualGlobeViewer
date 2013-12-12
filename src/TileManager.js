@@ -22,15 +22,20 @@ define(['./Tile','./TilePool', './TileRequest', './TileIndexBuffer', './Program'
 
 /** @constructor
 	TileManager constructor
+	
+	Take in parameters its parent : can be a globe or a sky
  */
-var TileManager = function( globe )
+var TileManager = function( parent )
 {
-	this.globe = globe;
-	this.renderContext = this.globe.renderContext;
-	this.tilePool = new TilePool(this.renderContext);
+	this.parent = parent;
+	this.renderContext = this.parent.renderContext;
+	// Create a new tile pool or use the one from the parent
+	this.tilePool = parent.tilePool || new TilePool(this.renderContext);
+	this.tiling = null;
 	this.imageryProvider = null;
 	this.elevationProvider = null;
 	this.tilesToRender = [];
+	this.visibleTiles = [];
 	this.tilesToRequest = [];
 	this.postRenderers = [];
 	this.level0Tiles = [];
@@ -61,7 +66,6 @@ var TileManager = function( globe )
 	this.tileIndexBuffer = new TileIndexBuffer(this.renderContext,this.tileConfig);
 
 	// For debug
-	this.showWireframe = false;
 	this.freeze = false;
 
 	// Stats
@@ -88,7 +92,7 @@ var TileManager = function( globe )
 	";
 
 	this.fragmentShader = "\
-	precision highp float; \n\
+	precision lowp float; \n\
 	varying vec2 texCoord;\n";
 	if ( this.renderContext.lighting )
 		this.fragmentShader += "varying vec3 color;\n";
@@ -116,9 +120,6 @@ var TileManager = function( globe )
 TileManager.prototype.addPostRenderer = function(renderer)
 {	
 	this.postRenderers.push( renderer );
-	this.postRenderers.sort( function(a,b) {
-		return (a.zIndex || 0) - (b.zIndex || 0);
-	});
 	
 	if ( renderer.generate )
 	{
@@ -162,10 +163,12 @@ TileManager.prototype.setImageryProvider = function(ip)
 	{
 		// Clean tile pool
 		this.tilePool.disposeAll();
+		
+		this.tiling = ip.tiling;
 
 		// Rebuild level zero tiles
 		this.tileConfig.imageSize = ip.tilePixelSize;
-		this.level0Tiles = ip.tiling.generateLevelZeroTiles(this.tileConfig,this.tilePool);
+		this.level0Tiles = this.tiling.generateLevelZeroTiles(this.tileConfig,this.tilePool);
 
 		// Update program
 		if ( ip.customShader )
@@ -228,7 +231,7 @@ TileManager.prototype.getOverlappedLevelZeroTiles = function( geometry )
 	var tileIndices = [];
 	for ( var i = 0; i < coords.length; i++ )
 	{
-		var index = this.imageryProvider.tiling.lonlat2LevelZeroIndex( coords[i][0], coords[i][1] );
+		var index = this.tiling.lonlat2LevelZeroIndex( coords[i][0], coords[i][1] );
 		if ( !indexMap[index] )
 		{
 			indexMap[ index ] = true;
@@ -248,13 +251,24 @@ TileManager.prototype.setElevationProvider = function(tp)
 {	
 	this.reset();
 	this.elevationProvider = tp;
-	this.tileConfig.tesselation = tp ? tp.tilePixelSize : 9;
+	
+	var newTesselation = tp ? tp.tilePixelSize : 9;
+	if ( newTesselation != this.tileConfig.tesselation )
+	{
+		this.tileConfig.tesselation = newTesselation;
+		
+		// Reset the shared buffers : texture coordinate and indices
+		var gl = this.renderContext.gl;
+		this.tileIndexBuffer.reset();
+		gl.deleteBuffer( this.tcoordBuffer );
+		this.tcoordBuffer = null;
+	}
 }
 
 /**************************************************************************************************************/
 
 /**
-	Reset the tile manager : remove all the tiles
+	Reset the tile manager : unload all tiles
  */
 TileManager.prototype.reset = function()
 {
@@ -264,12 +278,6 @@ TileManager.prototype.reset = function()
 		this.level0Tiles[i].deleteChildren(this.renderContext,this.tilePool);
 		this.level0Tiles[i].dispose(this.renderContext,this.tilePool);
 	}
-	
-	// Reset the shared buffers : texture coordinate and indices
-	var gl = this.renderContext.gl;
-	this.tileIndexBuffer.reset();
-	gl.deleteBuffer( this.tcoordBuffer );
-	this.tcoordBuffer = null;
 	
 	this.level0TilesLoaded = false;
 }
@@ -310,6 +318,7 @@ TileManager.prototype.visitTiles = function( callback )
  TileManager.prototype.traverseTiles = function()
  {		
 	this.tilesToRender.length = 0;
+	this.visibleTiles.length = 0;
 	this.tilesToRequest.length = 0;
 	this.numTraversedTiles = 0;
 	
@@ -334,16 +343,16 @@ TileManager.prototype.visitTiles = function( callback )
 					tile.state = Tile.State.REQUESTED;
 					this.tilesToRequest.push(tile);
 				}
-				else if ( tile.state == Tile.State.ERROR )
+				else if ( tile.state == Tile.State.ERROR && this.imageryProvider )
 				{
-					this.globe.publish("baseLayersError", this.imageryProvider);
+					this.parent.publish("baseLayersError", this.imageryProvider);
 					this.imageryProvider._ready = false;
 				}
 			}
 		}
-		if ( this.level0TilesLoaded )
+		if ( this.level0TilesLoaded && this.imageryProvider  )
 		{
-			this.globe.publish("baseLayersReady");
+			this.parent.publish("baseLayersReady");
 		}
 	}
 	
@@ -379,7 +388,7 @@ TileManager.prototype.processTile = function(tile,level)
 	// Update frame number
 	tile.frameNumber = this.frameNumber;
 	
-	var isLeaf = false;
+	var isLeaf = true;
 
 	// Request the tile if needed
 	if ( tile.state == Tile.State.NONE )
@@ -391,7 +400,31 @@ TileManager.prototype.processTile = function(tile,level)
 	}
 		
 	// Check if the tiles needs to be refined
-	if ( (tile.state == Tile.State.LOADED) && (level+1 < this.imageryProvider.numberOfLevels) && (tile.needsToBeRefined(this.renderContext) ) )
+	// We only refine loaded tile
+	if ( tile.state == Tile.State.LOADED  )
+	{
+		if ( this.imageryProvider )
+		{
+			isLeaf = level >= this.imageryProvider.numberOfLevels;
+		}
+		else
+		{
+			isLeaf = false;
+		}
+		
+		isLeaf |= !tile.needsToBeRefined( this.renderContext );
+	}
+	
+	if ( isLeaf )
+	{
+		// Push the tiles to render only if the texture is valid
+		if ( tile.texture )
+		{
+			this.tilesToRender.push( tile );
+		}
+		this.visibleTiles.push( tile );
+	}
+	else
 	{
 		// Create the children if needed
 		if ( tile.children == null )
@@ -411,13 +444,6 @@ TileManager.prototype.processTile = function(tile,level)
 			}
 		}
 	}
-	else
-	{
-		isLeaf = true;
-		
-		// Push the tiles to render
-		this.tilesToRender.push( tile );
-	}
 	
 	// Traverse extension
 	for ( var x in tile.extension ) 
@@ -425,7 +451,6 @@ TileManager.prototype.processTile = function(tile,level)
 		var e = tile.extension[x];
 		if ( e.traverse ) e.traverse(tile,isLeaf);
 	}
-	
 }
 
 /**************************************************************************************************************/
@@ -442,7 +467,7 @@ TileManager.prototype.processTile = function(tile,level)
 		if ( tile.frameNumber == this.frameNumber )
 		{
 			// Generate the tile using data from tileRequest
-			tile.generate( this.tilePool, tileRequest.imageRequest.image, tileRequest.elevations );
+			tile.generate( this.tilePool, tileRequest.image, tileRequest.elevations );
 
 			// Now post renderers can generate their data on the new tile
 			for (var i=0; i < this.postRenderers.length; i++ )
@@ -462,8 +487,8 @@ TileManager.prototype.processTile = function(tile,level)
 	}
 	
 	// All requests have been processed, send endBackgroundLoad event
-	if ( this.availableRequests.length == this.maxRequests )
-		this.globe.publish("endBackgroundLoad");
+	if ( this.availableRequests.length == this.maxRequests && this.imageryProvider )
+		this.parent.publish("endBackgroundLoad");
 
 }
 
@@ -473,34 +498,9 @@ TileManager.prototype.processTile = function(tile,level)
 	Render tiles
  */
  TileManager.prototype.renderTiles = function()
- {	
+ {
 	var rc = this.renderContext;
 	var gl = rc.gl;
-	
-	gl.enable(gl.POLYGON_OFFSET_FILL);
-	gl.polygonOffset(0,4);
-	// TODO : remove this
-	gl.disable(gl.CULL_FACE);
-	
-	// Check if the program of imagery provider changed
-	// Only for fragment shader for now
-	if ( this.currentFragmentShader && this.currentFragmentShader != this.imageryProvider.customShader.fragmentCode )
-	{
-		this.program.dispose();
-		this.program = new Program(this.renderContext);
-
-		if ( this.imageryProvider.customShader )
-		{
-			this.currentFragmentShader = this.imageryProvider.customShader.fragmentCode ? this.imageryProvider.customShader.fragmentCode : this.fragmentShader;
-			this.program.createFromSource( this.imageryProvider.customShader.vertexShader ? this.imageryProvider.customShader.vertexShader : this.vertexShader,
-										   this.currentFragmentShader );
-		}
-	}
-
-    // Setup program
-    this.program.apply();
-	
-	var attributes = this.program.attributes;
 	
 	// Compute near/far from tiles
 	var nr;
@@ -516,9 +516,9 @@ TileManager.prototype.processTile = function(tile,level)
 	{
 		nr = 1e9;
 		fr = 0.0;
-		for ( var i = 0; i < this.tilesToRender.length; i++ )
+		for ( var i = 0; i < this.visibleTiles.length; i++ )
 		{
-			var tile = this.tilesToRender[i];
+			var tile = this.visibleTiles[i];
 			// Update near/far to take into account the tile
 			nr = Math.min( nr, tile.distance - 1.5 * tile.radius );
 			fr = Math.max( fr, tile.distance + 1.5 * tile.radius );
@@ -526,71 +526,108 @@ TileManager.prototype.processTile = function(tile,level)
 	}
 	rc.near = Math.max( rc.minNear, nr );
 	rc.far = fr;
-	
-	// Update projection matrix with new near and far values
-	mat4.perspective(rc.fov, rc.canvas.width / rc.canvas.height, rc.near, rc.far, rc.projectionMatrix);
 
-	// Update uniforms if needed
-	if ( this.imageryProvider.customShader )
-		this.imageryProvider.customShader.updateUniforms(gl, this.program);
-
-	// Setup state
-	gl.activeTexture(gl.TEXTURE0);
-	gl.uniformMatrix4fv(this.program.uniforms["projectionMatrix"], false, rc.projectionMatrix);
-	gl.uniform1i(this.program.uniforms["colorTexture"], 0);
-	
-	// Bind the texture coordinate buffer (shared between all tiles
-	if ( !this.tcoordBuffer )
-		this.buildSharedTexCoordBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.tcoordBuffer);
-	gl.vertexAttribPointer(attributes['tcoord'], 2, gl.FLOAT, false, 0, 0);
-	
-	var currentIB = null;
-	
-	for ( var i = 0; i < this.tilesToRender.length; i++ )
+	if ( this.tilesToRender.length != 0 )
 	{
-		var tile = this.tilesToRender[i];
-		
-		var isLoaded = ( tile.state == Tile.State.LOADED );
-		var isLevelZero = ( tile.parentIndex == -1 );
-		
-		// Bind tile texture
-		gl.bindTexture(gl.TEXTURE_2D, tile.texture);
-
-		// Update uniforms for modelview matrix
-		mat4.multiply( rc.viewMatrix, tile.matrix, rc.modelViewMatrix );
-		gl.uniformMatrix4fv(this.program.uniforms["modelViewMatrix"], false, rc.modelViewMatrix);
-	
-		// Bind the vertex buffer
-		gl.bindBuffer(gl.ARRAY_BUFFER, tile.vertexBuffer);
-		gl.vertexAttribPointer(attributes['vertex'], 3, gl.FLOAT, false, 4*this.tileConfig.vertexSize, 0);
-		if (this.tileConfig.normals)
-			gl.vertexAttribPointer(attributes['normal'], 3, gl.FLOAT, false, 4*this.tileConfig.vertexSize, 12);
-				
-		var indexBuffer = ( isLoaded || isLevelZero ) ? this.tileIndexBuffer.getSolid() : this.tileIndexBuffer.getSubSolid(tile.parentIndex);
-		// Bind the index buffer only if different (index buffer is shared between tiles)
-		if ( currentIB != indexBuffer )
-		{	
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-			currentIB = indexBuffer;
+		// Set state (depends if geo or astro)
+		if ( this.tileConfig.cullSign < 0 )
+		{
+			gl.depthMask(false);
+			gl.disable(gl.DEPTH_TEST);
+			gl.disable(gl.CULL_FACE);
+		}
+		else
+		{
+			gl.enable(gl.POLYGON_OFFSET_FILL);
+			gl.polygonOffset(0,4);
 		}
 		
-		// Finally draw the tiles
-		gl.drawElements(gl.TRIANGLES, currentIB.numIndices, gl.UNSIGNED_SHORT, 0);
+		// Check if the program of imagery provider changed
+		// Only for fragment shader for now
+		if ( this.currentFragmentShader && this.currentFragmentShader != this.imageryProvider.customShader.fragmentCode )
+		{
+			this.program.dispose();
+			this.program = new Program(this.renderContext);
+
+			if ( this.imageryProvider.customShader )
+			{
+				this.currentFragmentShader = this.imageryProvider.customShader.fragmentCode ? this.imageryProvider.customShader.fragmentCode : this.fragmentShader;
+				this.program.createFromSource( this.imageryProvider.customShader.vertexShader ? this.imageryProvider.customShader.vertexShader : this.vertexShader,
+											   this.currentFragmentShader );
+			}
+		}
+
+		// Setup program
+		this.program.apply();
+		
+		var attributes = this.program.attributes;
+			
+		// Update projection matrix with new near and far values
+		mat4.perspective(rc.fov, rc.canvas.width / rc.canvas.height, rc.near, rc.far, rc.projectionMatrix);
+
+		// Update uniforms if needed
+		if ( this.imageryProvider.customShader )
+			this.imageryProvider.customShader.updateUniforms(gl, this.program);
+
+		// Setup state
+		gl.activeTexture(gl.TEXTURE0);
+		gl.uniformMatrix4fv(this.program.uniforms["projectionMatrix"], false, rc.projectionMatrix);
+		gl.uniform1i(this.program.uniforms["colorTexture"], 0);
+		
+		// Bind the texture coordinate buffer (shared between all tiles
+		if ( !this.tcoordBuffer )
+			this.buildSharedTexCoordBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.tcoordBuffer);
+		gl.vertexAttribPointer(attributes['tcoord'], 2, gl.FLOAT, false, 0, 0);
+		
+		var currentIB = null;
+		
+		for ( var i = 0; i < this.tilesToRender.length; i++ )
+		{
+			var tile = this.tilesToRender[i];
+			
+			var isLoaded = ( tile.state == Tile.State.LOADED );
+			var isLevelZero = ( tile.parentIndex == -1 );
+			
+			// Bind tile texture
+			gl.bindTexture(gl.TEXTURE_2D, tile.texture);
+
+			// Update uniforms for modelview matrix
+			mat4.multiply( rc.viewMatrix, tile.matrix, rc.modelViewMatrix );
+			gl.uniformMatrix4fv(this.program.uniforms["modelViewMatrix"], false, rc.modelViewMatrix);
+		
+			// Bind the vertex buffer
+			gl.bindBuffer(gl.ARRAY_BUFFER, tile.vertexBuffer);
+			gl.vertexAttribPointer(attributes['vertex'], 3, gl.FLOAT, false, 4*this.tileConfig.vertexSize, 0);
+			if (this.tileConfig.normals)
+				gl.vertexAttribPointer(attributes['normal'], 3, gl.FLOAT, false, 4*this.tileConfig.vertexSize, 12);
+					
+			var indexBuffer = ( isLoaded || isLevelZero ) ? this.tileIndexBuffer.getSolid() : this.tileIndexBuffer.getSubSolid(tile.parentIndex);
+			// Bind the index buffer only if different (index buffer is shared between tiles)
+			if ( currentIB != indexBuffer )
+			{	
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+				currentIB = indexBuffer;
+			}
+			
+			// Finally draw the tiles
+			gl.drawElements(gl.TRIANGLES, currentIB.numIndices, gl.UNSIGNED_SHORT, 0);
+		}
+		
+		if ( this.tileConfig.cullSign < 0 )
+		{
+			gl.depthMask(true);
+			gl.enable(gl.DEPTH_TEST);
+		}
+		else		
+		{
+			gl.disable(gl.POLYGON_OFFSET_FILL);
+		}
 	}
 	
 	for (var i=0; i < this.postRenderers.length; i++ )
 	{
-		if (this.postRenderers[i].needsOffset)
-			this.postRenderers[i].render( this.tilesToRender );
-	}
-	
-	gl.disable(gl.POLYGON_OFFSET_FILL);
-	
-	for (var i=0; i < this.postRenderers.length; i++ )
-	{
-		if (!this.postRenderers[i].needsOffset)
-			this.postRenderers[i].render( this.tilesToRender );
+		this.postRenderers[i].render( this.visibleTiles );
 	}
 }
 
@@ -617,12 +654,11 @@ var _sortTilesByDistance = function(t1,t2)
 		if ( this.availableRequests.length > 0 ) // Check to limit the number of requests done per frame
 		{
 			// First launch request, send an event
-			if ( this.availableRequests.length == this.maxRequests )
-				this.globe.publish("startBackgroundLoad");
+			if ( this.availableRequests.length == this.maxRequests && this.imageryProvider )
+				this.parent.publish("startBackgroundLoad");
 			
 			var tileRequest = this.availableRequests.pop();
 			tileRequest.launch( tile );
-			tile.state = Tile.State.LOADING;
 		}
 		else
 		{
@@ -638,14 +674,13 @@ var _sortTilesByDistance = function(t1,t2)
  */
 TileManager.prototype.render = function()
 {
-	if ( this.imageryProvider == null
-		|| !this.imageryProvider._ready )
+	if ( this.imageryProvider && !this.imageryProvider._ready )
 	{
 		return;
 	}
 	
 	// Specific case when the image provider has a level zero image : generate the texture for each level zero tile
-	if ( !this.level0TilesLoaded && this.imageryProvider.levelZeroImage )
+	if ( !this.level0TilesLoaded && this.imageryProvider && this.imageryProvider.levelZeroImage )
 	{
 		this.imageryProvider.generateLevel0Textures( this.level0Tiles, this.tilePool );
 		
@@ -664,7 +699,7 @@ TileManager.prototype.render = function()
 		}
 
 		this.level0TilesLoaded = true;
-		this.globe.publish("baseLayersReady");
+		this.parent.publish("baseLayersReady");
 	}
 
 	var stats = this.renderContext.stats;
@@ -701,7 +736,7 @@ TileManager.prototype.render = function()
  */
 TileManager.prototype.getVisibleTile = function(lon, lat)
 {
-	return this.imageryProvider.tiling.findInsideTile(lon, lat, this.tilesToRender);
+	return this.tiling.findInsideTile(lon, lat, this.visibleTiles);
 }
 
 /**************************************************************************************************************/

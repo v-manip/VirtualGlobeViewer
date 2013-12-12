@@ -106,8 +106,6 @@ var RasterOverlayRenderer = function(globe)
 
 		this.imageRequests.push( imageRequest );
 	}
-
-	this.needsOffset = true;
 }
 
 /**************************************************************************************************************/
@@ -202,10 +200,7 @@ RasterOverlayRenderable.prototype.generateChild = function( tile )
 		return;*/
 
 	var r = this.bucket.renderer;
-	if ( r.overlayIntersects( tile.geoBound, this.bucket.layer ) )
-	{
-		r.addOverlayToTile( tile, this.bucket, this );
-	}
+	r.addOverlayToTile( tile, this.bucket, this );
 }
 
 /**************************************************************************************************************/
@@ -303,9 +298,7 @@ var Bucket = function(layer)
 	this.layer = layer;
 	this.renderer = null;
 	// TODO : hack
-	this.style = {
-		zIndex: layer.zIndex
-	};
+	this.style = layer;
 }
 
 /**************************************************************************************************************/
@@ -331,6 +324,7 @@ RasterOverlayRenderer.prototype.addOverlay = function( overlay )
 
 	var bucket = new Bucket(overlay);
 	bucket.renderer = this;
+	bucket.id = this.rendererManager.bucketId++;
 	this.buckets.push( bucket );
 	
 	overlay._bucket = bucket;
@@ -387,6 +381,9 @@ RasterOverlayRenderer.prototype.removeOverlay = function( overlay )
  */
 RasterOverlayRenderer.prototype.addOverlayToTile = function( tile, bucket, parentRenderable )
 {
+	if (!this.overlayIntersects( tile.geoBound, bucket.layer ))
+		return;
+		
 	if ( !tile.extension.renderer )
 		tile.extension.renderer = new RendererTileData(this.rendererManager);
 	
@@ -503,9 +500,7 @@ RasterOverlayRenderer.prototype.generateLevelZero = function( tile )
 	// Traverse all overlays
 	for ( var i = 0; i < this.buckets.length; i++ )
 	{
-		var overlay = this.buckets[i].layer;
-		if ( this.overlayIntersects( tile.geoBound, overlay ) )
-			this.addOverlayToTile(tile,this.buckets[i]);
+		this.addOverlayToTile(tile,this.buckets[i]);
 	}
 }
 
@@ -673,6 +668,7 @@ RasterOverlayRenderer.prototype.render = function( renderables, start, end )
 	
 	// reset gl states
 	gl.disable(gl.BLEND);
+	//gl.disable(gl.POLYGON_OFFSET_FILL);
 	gl.depthFunc( gl.LESS );
 }
 

@@ -17,8 +17,8 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
- define(['./FeatureStyle','./VectorRendererManager','./Utils','./BaseLayer','./RendererTileData', './CoordinateSystem'],
-	function(FeatureStyle,VectorRendererManager,Utils,BaseLayer,RendererTileData, CoordinateSystem) {
+ define(['./FeatureStyle','./VectorRendererManager','./Utils','./BaseLayer','./RendererTileData', './CoordinateSystem', './Tile'],
+	function(FeatureStyle,VectorRendererManager,Utils,BaseLayer,RendererTileData, CoordinateSystem, Tile) {
 
 /**************************************************************************************************************/
 
@@ -42,6 +42,7 @@ var OpenSearchLayer = function(options){
 	this.maxRequests = options.maxRequests || 2;
 	this.requestProperties = "";
 	this.invertY = options.invertY || false;
+	this.coordSystemRequired = options.hasOwnProperty('coordSystemRequired') ? options.coordSystemRequired : true;
 
 	// Set style
 	if ( options && options['style'] )
@@ -104,27 +105,6 @@ OpenSearchLayer.prototype._detach = function()
 /**************************************************************************************************************/
 
 /**
- *	Update children state as inherited from parent
- */
-OpenSearchLayer.prototype.updateChildrenState = function(tile)
-{
-	if ( tile.children )
-	{
-		for (var i = 0; i < 4; i++)
-		{
-			if ( tile.children[i].extension[this.extId] )
-			{
-				tile.children[i].extension[this.extId].state = OpenSearchLayer.TileState.INHERIT_PARENT;
-				tile.children[i].extension[this.extId].complete = true;
-			}
-			this.updateChildrenState(tile.children[i]);
-		}
-	}
-}
-
-/**************************************************************************************************************/
-
-/**
  * 	Launch request to the OpenSearch service
  */
 OpenSearchLayer.prototype.launchRequest = function(tile, url)
@@ -165,32 +145,16 @@ OpenSearchLayer.prototype.launchRequest = function(tile, url)
 
 				tileData.complete = (response.totalResults == response.features.length);
 					
-				// Update children state
-				if ( tileData.complete )
-				{
-					self.updateChildrenState(tile);
-				}
-
 				self.updateFeatures(response.features);
 				
-				if ( response.features.length > 0 )
+				for ( var i=0; i < response.features.length; i++ )
 				{
-					for ( var i=0; i < response.features.length; i++ )
-					{
-						self.addFeature( response.features[i], tile );
-					}
-				}
-				else
-				{
-					// HACK to avoid multiple rendering of parent features
-					if ( tile.extension.pointSprite == undefined )
-						tile.extension.pointSprite  = new RendererTileData();
+					self.addFeature( response.features[i], tile );
 				}
 			}
 			else if ( xhr.status >= 400 )
 			{
 				tileData.complete = true;
-				//self.updateChildrenState(tile);
 				console.error( xhr.responseText );
 			}
 			
@@ -291,7 +255,11 @@ OpenSearchLayer.prototype.addFeature = function( feature, tile )
 
 	// Add to renderer
 	//this.addFeatureToRenderer(feature, tile);
-	this.globe.vectorRendererManager.addGeometryToTile(this,feature.geometry,this.style,tile);
+	
+	// MS: Feature could be added from ClusterOpenSearch which have features with different styles
+	var style = feature.properties.style ? feature.properties.style : this.style;
+
+	this.globe.vectorRendererManager.addGeometryToTile(this, feature.geometry, style, tile);
 }
 
 
@@ -346,7 +314,7 @@ OpenSearchLayer.prototype.modifyFeatureStyle = function( feature, style )
 	feature.properties.style = style;
 	var featureData = this.featuresSet[feature.properties.identifier];
 	if ( featureData )
-	{	
+	{
 		for ( var i = 0; i < featureData.tiles.length; i++ )
 		{
 			var tile = featureData.tiles[i];
@@ -374,7 +342,7 @@ OpenSearchLayer.prototype.generate = function(tile)
 {
 	if ( tile.order == this.minOrder )
 	{
-		tile.extension[this.extId] = new OSData(this,tile);
+		tile.extension[this.extId] = new OSData(this,tile,null);
 	}
 	
 };
@@ -385,9 +353,10 @@ OpenSearchLayer.prototype.generate = function(tile)
  *	OpenSearch renderable
  */
 
-var OSData = function(layer,tile)
+var OSData = function(layer,tile,p)
 {
 	this.layer = layer;
+	this.parent = p;
 	this.tile = tile;
 	this.featureIds = []; // exclusive parameter to remove from layer
 	this.state = OpenSearchLayer.TileState.NOT_LOADED;
@@ -404,23 +373,34 @@ OSData.prototype.traverse = function( tile )
 {
 	if (!this.layer._visible)
 		return;
+		
+	if (tile.state != Tile.State.LOADED)
+		return;
 
-		// Check if the tile need to be loaded
-	if ( this.state != OpenSearchLayer.TileState.LOADED )
+	// Check if the tile need to be loaded
+	if ( this.state == OpenSearchLayer.TileState.NOT_LOADED )
 	{
 		this.layer.tilesToLoad.push( this );
 	}
 	
 	// Create children if needed
-	if ( tile.children && !this.childrenCreated )
+	if ( this.state == OpenSearchLayer.TileState.LOADED && !this.complete
+			&&  tile.state == Tile.State.LOADED && tile.children && !this.childrenCreated )
 	{
-		if ( this.state == OpenSearchLayer.TileState.LOADED && !this.complete )
+		for ( var i = 0; i < 4; i++ )
 		{
-			for ( var i = 0; i < 4; i++ )
-			{
-				tile.children[i].extension[this.layer.extId] = new OSData(this.layer,tile.children[i]);
-			}
-			this.childrenCreated = true;
+			if (!tile.children[i].extension[this.layer.extId])
+				tile.children[i].extension[this.layer.extId] = new OSData(this.layer,tile.children[i],this);
+		}
+		this.childrenCreated = true;
+	
+		
+		// HACK : set renderable to have children
+		var renderables = tile.extension.renderer ? tile.extension.renderer.renderables : [];
+		for ( var i=0; i<renderables.length; i++ )
+		{
+			if ( renderables[i].bucket.layer == this.layer )
+				renderables[i].hasChildren = true;
 		}
 	}
 }
@@ -431,12 +411,25 @@ OSData.prototype.traverse = function( tile )
  * 	Dispose renderable data from tile
  */
 OSData.prototype.dispose = function( renderContext, tilePool )
-{	
+{
+	if (this.parent && this.parent.childrenCreated)
+	{
+		this.parent.childrenCreated = false;
+		// HACK : set renderable to not have children!
+		var renderables = this.parent.tile.extension.renderer ? this.parent.tile.extension.renderer.renderables : [];
+		for ( var i=0; i<renderables.length; i++ )
+		{
+			if ( renderables[i].bucket.layer == this.layer )
+				renderables[i].hasChildren = false;
+		}
+	}
+	
 	for( var i = 0; i < this.featureIds.length; i++ )
 	{
 		this.layer.removeFeature( this.featureIds[i], this.tile );
 	}
 	this.tile = null;
+	this.parent = null;
 }
 
 /**************************************************************************************************************/
@@ -447,13 +440,10 @@ OSData.prototype.dispose = function( renderContext, tilePool )
 OpenSearchLayer.prototype.buildUrl = function( tile )
 {
 	var url = this.serviceUrl + "/search?order=" + tile.order + "&healpix=" + tile.pixelIndex;
-	if ( this.globe.tileManager.imageryProvider.tiling.coordSystem == "EQ" )
+	if ( this.coordSystemRequired )
 	{
+		// OpenSearchLayer always works in equatorial
 		url += "&coordSystem=EQUATORIAL";
-	}
-	else
-	{
-		url += "&coordSystem=GALACTIC";
 	}
 	url += "&media=json";
 	return url;
@@ -510,10 +500,10 @@ OpenSearchLayer.prototype.updateFeatures = function( features )
 			case "Point":
 
 				// Convert to default coordinate system if needed
-				if ( "EQ" != this.globe.tileManager.imageryProvider.tiling.coordSystem )
+				/*if ( "EQ" != this.globe.tileManager.imageryProvider.tiling.coordSystem )
 				{
 					currentFeature.geometry.coordinates = CoordinateSystem.convert(currentFeature.geometry.coordinates, this.globe.tileManager.imageryProvider.tiling.coordSystem, "EQ");
-				}
+				}*/
 
 				// Convert to geographic to simplify picking
 				if ( currentFeature.geometry.coordinates[0] > 180 )
@@ -524,10 +514,10 @@ OpenSearchLayer.prototype.updateFeatures = function( features )
 				for ( var j = 0; j < ring.length; j++ )
 				{
 					// Convert to default coordinate system if needed
-					if ( "EQ" != this.globe.tileManager.imageryProvider.tiling.coordSystem )
+					/*if ( "EQ" != this.globe.tileManager.imageryProvider.tiling.coordSystem )
 					{
 						ring[j] = CoordinateSystem.convert(ring[j], this.globe.tileManager.imageryProvider.tiling.coordSystem, "EQ");
-					}
+					}*/
 
 					// Convert to geographic to simplify picking
 					if ( ring[j][0] > 180 )

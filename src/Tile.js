@@ -58,7 +58,7 @@ var Tile = function()
 	
 	// Tile configuration given by tile manager : contains if the tile uses skirt, the tesselation, etc...
 	this.config = null;
-	this.imageSize = -1;
+	this.imageSize = 256;
 }
 
 /**************************************************************************************************************/
@@ -269,7 +269,7 @@ Tile.prototype.dispose = function(renderContext,tilePool)
 	if ( this.state == Tile.State.LOADED  )
 	{
 		tilePool.disposeGLBuffer(this.vertexBuffer);
-		tilePool.disposeGLTexture(this.texture);
+		if (this.texture) tilePool.disposeGLTexture(this.texture);
 		
 		this.vertexBuffer = null;
 		this.texture = null;
@@ -288,11 +288,12 @@ Tile.prototype.deleteChildren = function(renderContext,tilePool)
 {
 	if ( this.children )
 	{
-		// Dispose children resources, and then delete its children
 		for (var i = 0; i < 4; i++)
 		{
-			this.children[i].dispose(renderContext,tilePool);
+			// Recursively delete its children
 			this.children[i].deleteChildren(renderContext,tilePool);
+			// Dispose its ressources (WebGL)
+			this.children[i].dispose(renderContext,tilePool);
 		}
 		
 		// Cleanup the tile

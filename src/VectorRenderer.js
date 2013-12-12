@@ -98,6 +98,7 @@ VectorRenderer.prototype._recursiveAddGeometryToTile = function(bucket, geometry
 		{
 			if ( tile.children[i].state == Tile.State.LOADED )
 			{
+				renderable.hasChildren = true;
 				this._recursiveAddGeometryToTile( bucket, geometry, tile.children[i] );
 			}
 		}
@@ -160,6 +161,8 @@ VectorRenderer.prototype.removeGeometry = function(geometry)
 		}
 		// Remove from geometry arrays
 		this.levelZeroTiledGeometries.splice( this.levelZeroTiledGeometries.indexOf(geometry), 1 );
+		
+		 geometry._tileIndices = null;
 	}
 	else
 	{
@@ -221,13 +224,19 @@ VectorRenderer.prototype._addGeometryToTile = function(bucket, geometry, tile)
 	}
 	
 	var renderable = tileData.getRenderable(bucket);
+	var needsToAdd = false;
 	if (!renderable) 
 	{
 		renderable = bucket.createRenderable();
-		tileData.renderables.push(renderable);
+		needsToAdd = true;
 	}
+	
 	if ( renderable.add(geometry, tile) )
 	{
+		if (needsToAdd)
+		{
+			tileData.renderables.push(renderable);
+		}
 		return renderable;
 	}
 	
@@ -244,11 +253,40 @@ VectorRenderer.prototype.removeGeometryFromTile = function(geometry,tile)
 	var tileData = tile.extension.renderer;
 	if (tileData)
 	{
-		var renderable = tileData.getRenderable( geometry._bucket );
-		var numGeometries = renderable.remove(geometry);
-		if ( numGeometries == 0 )
+		var i = 0;
+		while ( i < tileData.renderables.length )
 		{
-			tileData.renderables.splice( tileData.renderables.indexOf(renderable),1);
+			var renderable = tileData.renderables[i];
+			var renderer = renderable.bucket.renderer;
+			if ( renderer == this )
+			{
+				// Remove renderable
+				var numGeometries = renderable.remove(geometry);
+				if ( numGeometries == 0 )
+				{
+					tileData.renderables.splice(i,1);
+				}
+				else
+				{
+					i++;
+				}
+	
+				// Remove geoemtry from children if needed
+				if ( renderable.hasChildren && tile.children)
+				{
+					for ( var n = 0; n < 4; n++ )
+					{
+						if ( tile.children[n].state == Tile.State.LOADED )
+						{
+							this.removeGeometryFromTile( geometry, tile.children[n] );
+						}
+					}
+				}
+			}
+			else
+			{
+				i++;
+			}
 		}
 	}
 }
