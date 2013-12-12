@@ -71,6 +71,52 @@ var PolygonRenderable = function(bucket)
 
 /**************************************************************************************************************/
 
+ /**
+  * Subdivide given coordinates and scale them to the earth's surface.
+  */
+PolygonRenderable.prototype.subdividePolygon = function(coords, subdiv_steps) {
+	var curved_coords = [];
+
+	for (var i = 0; i < coords.length-1; ++i) {
+		var p0_cart = CoordinateSystem.fromGeoTo3D(coords[i]);
+		var p1_cart = CoordinateSystem.fromGeoTo3D(coords[i+1]);
+
+		var v0 = vec3.createFrom(p0_cart[0], p0_cart[1], p0_cart[2]);
+		var v1 = vec3.createFrom(p1_cart[0], p1_cart[1], p1_cart[2]);
+
+		var dist = vec3.dist(v1, v0);
+		var delta = dist/subdiv_steps;	
+
+		var center = vec3.create(0,0,0);
+		for (var idx = 0; idx < subdiv_steps-1; ++idx) {	
+			var dir = vec3.create();
+			vec3.subtract(v1, v0, dir);
+			vec3.normalize(dir, dir);
+
+			vec3.scale(dir, delta*idx, dir);
+			
+			var np = vec3.create();
+			vec3.add(v0, dir, np);
+			vec3.normalize(np, np);		
+
+			var tmp = [np[0], np[1], np[2]];
+			var res = CoordinateSystem.from3DToGeo(tmp);
+			curved_coords.push([res[0], res[1], coords[i][2]]);
+		}
+	}
+
+	// A bit hacky way to ensure that the last calculated vertex is the same
+	// as the given one (necessary due to rounding errors).
+	// FIXXME: the order of incoming coords does seem to change. This has to
+	// be taken into account here! Moreover, when activating the next line
+	// a triangulation error is thrown in line 170.
+	// curved_coords.push(coords[0]);
+
+	return curved_coords;
+};
+
+/**************************************************************************************************************/
+
 /**
  * Add a geometry to the renderbale
  */
@@ -83,7 +129,9 @@ PolygonRenderable.prototype.add = function(geometry)
 	this.vertexBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 	
-	var coords = geometry['coordinates'][0];
+	// var coords = geometry['coordinates'][0];
+	// FIXXME: derive subdivision steps from distance
+	var coords = this.subdividePolygon(geometry['coordinates'], 30);
 	var vertices = new Float32Array( style.extrude ? coords.length * 6 : coords.length * 3 );
 	
 	var origin = vec3.create();
