@@ -1,7 +1,8 @@
 define([
 	'./Mesh',
-	'underscore'
-], function(Mesh, _) {
+	'underscore',
+	'jquery'
+], function(Mesh, _, $) {
 
 	var MeshCacheClient = function(opts) {
 		this.connectionType = opts.connectionType; // 'http', 'websocket'
@@ -36,10 +37,15 @@ define([
 	MeshCacheClient.prototype._sendRequest = function(url, request) {
 		// FIXXME: request mesh data from serverside MeshCache. Mesh format and connection
 		// type is determined by the internal options.
-
-
-		// FIXXME: send request to MeshCache.
 		// Currently a dummy mesh is created here and returned...
+
+        $.getJSON(url, function(data) {
+        	console.log('W3DS data: ' + data);
+        })
+        // .fail(function() {
+        //     alert('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
+        // });
+
 		var metadata = this.parseUrl(url);
 		var level = parseInt(metadata.tilelevel);
 		var mesh = this.generateDummyMesh(request.renderContext, level);

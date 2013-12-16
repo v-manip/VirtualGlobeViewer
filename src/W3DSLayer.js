@@ -45,11 +45,13 @@ var W3DSLayer = function( options )
 	}
 	else
 	{
-		url += '&service=W3DS';
+		url += 'service=W3DS';
 	}
 	url += "&request=GetTile";
 	url += "&version="
-	url += options['version'] || '0.4.0';
+	// FIXXME: should be 0.4.0. At the moment the W3DS server requires version 1.0.0
+	// url += options['version'] || '0.4.0';
+	url += options['version'] || '1.0.0';
 	url += "&crs=";
 	url += options.hasOwnProperty('crs') ? options['crs'] : 'EPSG:4326';	
 	url += "&layer=" + options['layer'];
@@ -84,7 +86,7 @@ W3DSLayer.prototype.getUrl = function(tile)
 	url += "&tilecol=" + tile.x;
 	url += "&tilerow=" + tile.y;
 
-	// console.log('[W3DSLayer::getUrl] url: ' + url);
+	console.log('[W3DSLayer::getUrl] url: ' + url);
 
 	return url;
 }
