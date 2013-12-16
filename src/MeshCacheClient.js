@@ -19,17 +19,47 @@ define([
 	MeshCacheClient.prototype.request = function(url, request) {
 		request.renderable.mesh = this._queryDB(url, request);
 
-		if (typeof request.renderable.mesh === 'undefined') {
-			//console.log('[MeshCacheClient::request] Requested mesh data from W3DS url: ' + url);
+		if (!request.renderable.mesh) {
+			console.log('[MeshCacheClient::request] Requested mesh data from W3DS url: ' + url);
 			// console.log('    via: ' + (this.connectionType === 'http') ? 'W3DS/http' : 'WebSocket');
 			// console.log(' format: ' + this.meshFormat);
 
 			this._sendRequest(url, request);
-		} else {
-			//console.log('[MeshCacheClient::request] mesh already in cache, skipping external request...');
+		} 
+		else {
+			console.log('[MeshCacheClient::request] mesh already in cache, skipping external request...');
 
 			request.successCallback.call(request);
 		}
+	};
+
+	MeshCacheClient.prototype._sendRequest = function(url, request) {
+		// FIXXME: request mesh data from serverside MeshCache. Mesh format and connection
+		// type is determined by the internal options.
+
+
+		// FIXXME: send request to MeshCache.
+		// Currently a dummy mesh is created here and returned...
+		var metadata = this.parseUrl(url);
+		var level = parseInt(metadata.tilelevel);
+		var mesh = this.generateDummyMesh(request.renderContext, level);
+
+		// FIXXME: store mesh into internal cache efficiently!
+		var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
+		this.cache[id] = mesh;
+
+		request.renderable.mesh = mesh;
+		request.successCallback.call(request);
+
+		//console.log('[MeshCacheClient::_queryDB] requesting level: ' + metadata.tilelevel + ' / row: ' + metadata.tilerow + ' / col: ' + metadata.tilecol);
+	};
+
+	MeshCacheClient.prototype._queryDB = function(url, request) {
+		var metadata = this.parseUrl(url);
+		var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
+
+		var mesh = this.cache[id];
+		return mesh;
 	};
 
 	MeshCacheClient.prototype.parseUrl = function(url) {
@@ -56,29 +86,6 @@ define([
 			tilecol: col,
 			tilerow: row
 		};
-	};
-
-	MeshCacheClient.prototype._sendRequest = function(url, request) {
-		// FIXXME: request mesh data from serverside MeshCache. Mesh format and connection
-		// type is determined by the internal options.
-		// Currently a dummy mesh is created here and returned...
-
-		request.mesh = this.generateDummyMesh(request.renderContext);
-		request.successCallback.call(request);
-	};
-
-	MeshCacheClient.prototype._queryDB = function(url, request) {
-
-		// FIXXME: query database!
-		var metadata = this.parseUrl(url);
-		//console.log('[MeshCacheClient::_queryDB] requesting level: ' + metadata.tilelevel + ' / row: ' + metadata.tilerow + ' / col: ' + metadata.tilecol);
-
-		if (!metadata.tilelevel) {
-			console.trace();
-			asdf;
-		}
-		var level = parseInt(metadata.tilelevel);
-		return this.generateDummyMesh(request.renderContext, level);
 	};
 
 	MeshCacheClient.prototype.generateDummyMesh = function(renderContext, level) {
@@ -118,5 +125,6 @@ define([
 	MeshCacheClient.prototype.startsWith = function(str, prefix) {
 		return str.indexOf(prefix) === 0;
 	};
+    
 	return MeshCacheClient;
 });
