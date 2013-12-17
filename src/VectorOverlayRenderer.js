@@ -17,7 +17,7 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
-define( ['./Program','./Tile','./RendererTileData', './MeshRequest', './MeshCacheClient', './Mesh'], function(Program, Tile, RendererTileData, MeshRequest, MeshCacheClient, Mesh) {
+define( ['./Program','./Tile','./RendererTileData', './MeshRequest', './MeshCacheClient', './Mesh', './SceneGraph/SceneGraph', './SceneGraph/Renderer', './Loader/glTF/glTFLoader'], function(Program, Tile, RendererTileData, MeshRequest, MeshCacheClient, Mesh, SceneGraph, SceneGraphRenderer, glTFLoader) {
 
 /**************************************************************************************************************/
 
@@ -26,7 +26,7 @@ define( ['./Program','./Tile','./RendererTileData', './MeshRequest', './MeshCach
 	VectorOverlayRenderer constructor
  */
 var VectorOverlayRenderer = function(globe)
-{
+{	
 	this.vertexShader = "\
 	attribute vec3 vertex;\n\
 	// attribute vec2 tcoord;\n\
@@ -69,9 +69,37 @@ var VectorOverlayRenderer = function(globe)
 	
 	this.meshCache = new MeshCacheClient({
 		connectionType: 'http',
-		meshFormat: 'model/glTF',
+		meshFormat: 'model/gltf',
 		size: 256 // in MB
 	});
+
+	// SceneGraph:
+	var renderContext = this.tileManager.renderContext;
+
+	this.rootNode = new SceneGraph.Node();
+	this.sgRenderer = new SceneGraphRenderer(renderContext, this.rootNode, {
+        minNear: renderContext.minNear,
+        far: 6,
+        fov: 45,
+        enableAlphaBlending: true
+    });
+
+    var loader = Object.create(glTFLoader);
+    loader.initWithPath("/glTF/model/vcurtains/gltf/test.json");
+
+    var onLoadedCallback = function(success, rootObj) {
+        sgRenderer = new SceneGraphRenderer(renderContext, rootObj, {
+            minNear: renderContext.minNear,
+            far: 6,
+            fov: 45,
+            enableAlphaBlending: true
+        });
+        renderContext.addRenderer(sgRenderer);   
+    };
+
+    loader.load({
+        rootObj: this.rootNode
+    }, onLoadedCallback);    
 
 	var self = this;
 	for (var i = 0; i < 4; i++) {

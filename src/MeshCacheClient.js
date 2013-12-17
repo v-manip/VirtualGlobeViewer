@@ -21,13 +21,12 @@ define([
 		request.renderable.mesh = this._queryDB(url, request);
 
 		if (!request.renderable.mesh) {
-			console.log('[MeshCacheClient::request] Requested mesh data from W3DS url: ' + url);
+			// console.log('[MeshCacheClient::request] Requested mesh data from W3DS url: ' + url);
 			// console.log('    via: ' + (this.connectionType === 'http') ? 'W3DS/http' : 'WebSocket');
 			// console.log(' format: ' + this.meshFormat);
 
 			this._sendRequest(url, request);
-		} 
-		else {
+		} else {
 			console.log('[MeshCacheClient::request] mesh already in cache, skipping external request...');
 
 			request.successCallback.call(request);
@@ -35,29 +34,35 @@ define([
 	};
 
 	MeshCacheClient.prototype._sendRequest = function(url, request) {
-		// FIXXME: request mesh data from serverside MeshCache. Mesh format and connection
-		// type is determined by the internal options.
-		// Currently a dummy mesh is created here and returned...
+		// Create a promise:
+		var requestTileData = function() {
+			return $.get(url);
+		};
 
-        $.getJSON(url, function(data) {
-        	console.log('W3DS data: ' + data);
-        })
-        // .fail(function() {
-        //     alert('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
-        // });
+		var self = this;
 
-		var metadata = this.parseUrl(url);
-		var level = parseInt(metadata.tilelevel);
-		var mesh = this.generateDummyMesh(request.renderContext, level);
+		requestTileData().done(function(data) {
+			// TODO: console.log() is not working within here, why?
+			//alert('[MeshCacheClient::_sendRequest] response successfully received: ' + data);
 
-		// FIXXME: store mesh into internal cache efficiently!
-		var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
-		this.cache[id] = mesh;
+			var metadata = self.parseUrl(url);
+			var level = parseInt(metadata.tilelevel);
 
-		request.renderable.mesh = mesh;
-		request.successCallback.call(request);
+			// FIXXME: Work with the received data instead of creating a dummy mesh!			
+			var mesh = self.generateDummyMesh(request.renderContext, level);
 
-		//console.log('[MeshCacheClient::_queryDB] requesting level: ' + metadata.tilelevel + ' / row: ' + metadata.tilerow + ' / col: ' + metadata.tilecol);
+			// FIXXME: store mesh into internal cache efficiently!
+			var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
+			self.cache[id] = mesh;
+
+			request.renderable.mesh = mesh;
+			request.successCallback.call(request);
+
+			//console.log('[MeshCacheClient::_queryDB] requesting level: ' + metadata.tilelevel + ' / row: ' + metadata.tilerow + ' / col: ' + metadata.tilecol);			
+		}).fail(function() {
+			// TODO: console.log() is not working within here, why?
+			console.log('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
+		});
 	};
 
 	MeshCacheClient.prototype._queryDB = function(url, request) {
@@ -65,6 +70,7 @@ define([
 		var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
 
 		var mesh = this.cache[id];
+
 		return mesh;
 	};
 
@@ -119,11 +125,11 @@ define([
 		var indices = [0, 1, 2, 0, 2, 3];
 		mesh.setIndices(indices);
 
-// 		var vertices = [
-// 			0.0, 0.1, 0.0, -0.1, -0.1, 0.0,
-// 			0.1, -0.1, 0.0
-// 		];
-// 		mesh.setVertices(vertices);
+		// 		var vertices = [
+		// 			0.0, 0.1, 0.0, -0.1, -0.1, 0.0,
+		// 			0.1, -0.1, 0.0
+		// 		];
+		// 		mesh.setVertices(vertices);
 
 		return mesh;
 	};
@@ -131,6 +137,6 @@ define([
 	MeshCacheClient.prototype.startsWith = function(str, prefix) {
 		return str.indexOf(prefix) === 0;
 	};
-    
+
 	return MeshCacheClient;
 });
