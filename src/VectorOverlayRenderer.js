@@ -86,20 +86,9 @@ var VectorOverlayRenderer = function(globe)
 
     var loader = Object.create(glTFLoader);
     loader.initWithPath("/glTF/model/vcurtains/gltf/test.json");
-
-    var onLoadedCallback = function(success, rootObj) {
-        sgRenderer = new SceneGraphRenderer(renderContext, rootObj, {
-            minNear: renderContext.minNear,
-            far: 6,
-            fov: 45,
-            enableAlphaBlending: true
-        });
-        renderContext.addRenderer(sgRenderer);   
-    };
-
     loader.load({
         rootObj: this.rootNode
-    }, onLoadedCallback);    
+    });
 
 	var self = this;
 	for (var i = 0; i < 4; i++) {
@@ -632,6 +621,7 @@ VectorOverlayRenderer.prototype.render = function( renderables, start, end )
 	var currentIB = null;
 	var currentProgram = null;
 
+
 	for ( var n = start; n < end; n++ )
 	{
 		var renderable = renderables[n];
@@ -710,6 +700,8 @@ VectorOverlayRenderer.prototype.render = function( renderables, start, end )
 	gl.disable(gl.BLEND);
 	//gl.disable(gl.POLYGON_OFFSET_FILL);
 	gl.depthFunc( gl.LESS );
+
+ 	this.sgRenderer.render();
 }
 
 /**************************************************************************************************************/
