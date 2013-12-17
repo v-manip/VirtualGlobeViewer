@@ -17,7 +17,7 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
-define( ['./Program','./Tile','./RendererTileData', './MeshRequest', './MeshCacheClient', './Mesh', './SceneGraph/SceneGraph', './SceneGraph/Renderer', './Loader/glTF/glTFLoader'], function(Program, Tile, RendererTileData, MeshRequest, MeshCacheClient, Mesh, SceneGraph, SceneGraphRenderer, glTFLoader) {
+define( ['./Program','./Tile','./RendererTileData', './MeshRequest', './MeshCacheClient', './Mesh', './SceneGraph/SceneGraph', './SceneGraph/Renderer'], function(Program, Tile, RendererTileData, MeshRequest, MeshCacheClient, Mesh, SceneGraph, SceneGraphRenderer) {
 
 /**************************************************************************************************************/
 
@@ -84,12 +84,6 @@ var VectorOverlayRenderer = function(globe)
         enableAlphaBlending: true
     });
 
-    var loader = Object.create(glTFLoader);
-    loader.initWithPath("/glTF/model/vcurtains/gltf/test.json");
-    loader.load({
-        rootObj: this.rootNode
-    });
-
 	var self = this;
 	for (var i = 0; i < 4; i++) {
 		var meshRequest = new MeshRequest({
@@ -139,13 +133,15 @@ var VectorOverlayRenderer = function(globe)
 	Create a renderable for the overlay.
 	There is one renderable per overlay and per tile.
  */
-var VectorOverlayRenderable = function( bucket )
+var VectorOverlayRenderable = function( bucket, rootNode )
 {
 	this.bucket = bucket;
 	this.mesh = null;
 	this.request = null;
 	this.requestFinished = false;
 	this.tile = null;
+
+	this.rootNode = rootNode;
 }
 
 /**************************************************************************************************************/
@@ -328,7 +324,7 @@ var Bucket = function(layer)
  */
 Bucket.prototype.createRenderable = function()
 {
-	return new VectorOverlayRenderable(this);
+	return new VectorOverlayRenderable(this, this.rootNode);
 }
 
 /**************************************************************************************************************/

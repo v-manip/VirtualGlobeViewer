@@ -1,8 +1,9 @@
 define([
 	'./Mesh',
+	'./Loader/glTF/glTFLoader',
 	'underscore',
 	'jquery'
-], function(Mesh, _, $) {
+], function(Mesh, glTFLoader, _, $) {
 
 	var MeshCacheClient = function(opts) {
 		this.connectionType = opts.connectionType; // 'http', 'websocket'
@@ -45,6 +46,8 @@ define([
 			// TODO: console.log() is not working within here, why?
 			//alert('[MeshCacheClient::_sendRequest] response successfully received: ' + data);
 
+			//self.createSGNode(request, data);
+
 			var metadata = self.parseUrl(url);
 			var level = parseInt(metadata.tilelevel);
 
@@ -62,6 +65,16 @@ define([
 		}).fail(function() {
 			// TODO: console.log() is not working within here, why?
 			console.log('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
+		});
+	};
+
+	MeshCacheClient.prototype.createSGNode = function(glTF_data) {
+		var loader = Object.create(glTFLoader);
+		loader.initWithPath("/glTF/model/vcurtains/gltf/test.json");
+		loader.load({
+			rootObj: this.rootNode
+		}, function(success, rootObj) {
+
 		});
 	};
 
