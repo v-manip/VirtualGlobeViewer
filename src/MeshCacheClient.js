@@ -1,13 +1,16 @@
 define([
+	'./SceneGraph/SceneGraph',
 	'./Mesh',
 	'./Loader/glTF/glTFLoader',
 	'underscore',
 	'jquery'
-], function(Mesh, glTFLoader, _, $) {
+], function(SceneGraph, Mesh, glTFLoader, _, $) {
 
 	var MeshCacheClient = function(opts) {
 		this.connectionType = opts.connectionType; // 'http', 'websocket'
 		this.meshFormat = opts.meshFormat; // 'model/x3d', 'model/x3db'; 'model/gltf'
+		this.sgRenderer = opts.sgRenderer;
+		this.baseURL = opts.baseURL;
 
 		this.cache = this.createCache(opts.size);
 
@@ -40,23 +43,23 @@ define([
 			return $.get(url);
 		};
 
-		var self = this;
+		var that = this;
 
 		requestTileData().done(function(data) {
 			// TODO: console.log() is not working within here, why?
-			//alert('[MeshCacheClient::_sendRequest] response successfully received: ' + data);
+			// alert('[MeshCacheClient::_sendRequest] response successfully received: ' + data);
 
-			//self.createSGNode(request, data);
+			that.createNodeFromDataAndAddToScene(data, that.baseURL);
 
-			var metadata = self.parseUrl(url);
+			var metadata = that.parseUrl(url);
 			var level = parseInt(metadata.tilelevel);
 
 			// FIXXME: Work with the received data instead of creating a dummy mesh!			
-			var mesh = self.generateDummyMesh(request.renderContext, level);
+			var mesh = that.generateDummyMesh(request.renderContext, level);
 
 			// FIXXME: store mesh into internal cache efficiently!
 			var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
-			self.cache[id] = mesh;
+			that.cache[id] = mesh;
 
 			request.renderable.mesh = mesh;
 			request.successCallback.call(request);
@@ -64,17 +67,21 @@ define([
 			//console.log('[MeshCacheClient::_queryDB] requesting level: ' + metadata.tilelevel + ' / row: ' + metadata.tilerow + ' / col: ' + metadata.tilecol);			
 		}).fail(function() {
 			// TODO: console.log() is not working within here, why?
-			console.log('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
+			alert('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
 		});
 	};
 
-	MeshCacheClient.prototype.createSGNode = function(glTF_data) {
+	MeshCacheClient.prototype.createNodeFromDataAndAddToScene = function(glTF_data, baseURL) {
 		var loader = Object.create(glTFLoader);
-		loader.initWithPath("/glTF/model/vcurtains/gltf/test.json");
-		loader.load({
-			rootObj: this.rootNode
-		}, function(success, rootObj) {
+		var that = this;
 
+		loader.initWithJSON(glTF_data, baseURL);
+
+		loader.load({
+			rootObj: new SceneGraph.Node()
+		}, function(success, loadedNode) {
+			that.sgRenderer.nodes.push(loadedNode);
+			// alert('[MeshCacheClient::createSGNode] success!');
 		});
 	};
 

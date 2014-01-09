@@ -67,12 +67,6 @@ var VectorOverlayRenderer = function(globe)
 	this.meshRequests = [];
 	this.frameNumber = 0;
 	
-	this.meshCache = new MeshCacheClient({
-		connectionType: 'http',
-		meshFormat: 'model/gltf',
-		size: 256 // in MB
-	});
-
 	// SceneGraph:
 	var renderContext = this.tileManager.renderContext;
 
@@ -83,6 +77,15 @@ var VectorOverlayRenderer = function(globe)
         fov: 45,
         enableAlphaBlending: true
     });
+
+	this.meshCache = new MeshCacheClient({
+		connectionType: 'http',
+		meshFormat: 'model/gltf',
+		size: 256, // in MB
+		sgRenderer: this.sgRenderer,
+		// FIXXME: how to determine baseURL?
+		baseURL: '/glTF/model/vcurtains/gltf/'
+	});
 
 	var self = this;
 	for (var i = 0; i < 4; i++) {
