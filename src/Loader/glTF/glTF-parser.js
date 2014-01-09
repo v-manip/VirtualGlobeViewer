@@ -381,11 +381,13 @@ var global = window;
 
         initWithJSON: {
             value: function(json, baseURL) {
-                this.json = json;
+                // CAUTION: this.baseURL has to be defined _before_ this.json is assigned, as the set-method of this.json internally uses this.baseURL!
                 this.baseURL = baseURL;
                 if (!baseURL) {
                     console.log("WARNING: no base URL passed to Reader:initWithJSON");
                 }
+                this.json = json;
+
                 return this;
             }
         }
