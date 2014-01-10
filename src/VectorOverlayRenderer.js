@@ -299,10 +299,13 @@ VectorOverlayRenderable.prototype.updateTextureFromParent = function( parent )
  */
 VectorOverlayRenderable.prototype.dispose = function(renderContext,tilePool)
 {
-	if ( this.ownTexture ) 
+	if ( this.mesh ) 
 	{
-		tilePool.disposeGLTexture(this.ownTexture);
-		this.ownTexture = null;
+		this.mesh.dispose();
+		this.mesh = null;
+		this.sgRenderer.removeNode(this.node);
+
+		// console.log('[VectorOverlayRenderable::dispose] id: ' + this.id);
 	}
 }
 
@@ -701,6 +704,7 @@ VectorOverlayRenderer.prototype.render = function( renderables, start, end )
 	gl.depthFunc( gl.LESS );
 
  	this.sgRenderer.render();
+ 	console.log('nodes: ' + this.sgRenderer.nodes.length);
 }
 
 /**************************************************************************************************************/

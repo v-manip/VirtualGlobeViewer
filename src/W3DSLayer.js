@@ -86,8 +86,6 @@ W3DSLayer.prototype.getUrl = function(tile)
 	url += "&tilecol=" + tile.x;
 	url += "&tilerow=" + tile.y;
 
-	console.log('[W3DSLayer::getUrl] url: ' + url);
-
 	return url;
 }
 

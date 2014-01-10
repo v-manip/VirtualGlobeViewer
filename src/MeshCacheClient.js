@@ -46,10 +46,9 @@ define([
 		var that = this;
 
 		requestTileData().done(function(data) {
-			// TODO: console.log() is not working within here, why?
-			// alert('[MeshCacheClient::_sendRequest] response successfully received: ' + data);
+			// console.log('[MeshCacheClient::_sendRequest] response successfully received: ' + data);
 
-			that.createNodeFromDataAndAddToScene(data, that.baseURL);
+			that.createNodeFromDataAndAddToScene(data, that.baseURL, request.renderable);
 
 			var metadata = that.parseUrl(url);
 			var level = parseInt(metadata.tilelevel);
@@ -57,21 +56,23 @@ define([
 			// FIXXME: Work with the received data instead of creating a dummy mesh!			
 			var mesh = that.generateDummyMesh(request.renderContext, level);
 
+			// IDEA: It would also be possible to store the model's json representation, instead of the mesh. Think about that! 
 			// FIXXME: store mesh into internal cache efficiently!
+			// FIXXME: disabled for now as it interferes with the VectorOverlayRenderable::dispose() method
 			var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
-			that.cache[id] = mesh;
+			request.renderable.id = id;
+			//that.cache[id] = mesh;
 
 			request.renderable.mesh = mesh;
 			request.successCallback.call(request);
 
 			//console.log('[MeshCacheClient::_queryDB] requesting level: ' + metadata.tilelevel + ' / row: ' + metadata.tilerow + ' / col: ' + metadata.tilecol);			
 		}).fail(function() {
-			// TODO: console.log() is not working within here, why?
-			alert('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
+			console.log('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
 		});
 	};
 
-	MeshCacheClient.prototype.createNodeFromDataAndAddToScene = function(glTF_data, baseURL) {
+	MeshCacheClient.prototype.createNodeFromDataAndAddToScene = function(glTF_data, baseURL, renderable) {
 		var loader = Object.create(glTFLoader);
 		var that = this;
 
@@ -81,7 +82,10 @@ define([
 			rootObj: new SceneGraph.Node()
 		}, function(success, loadedNode) {
 			that.sgRenderer.nodes.push(loadedNode);
-			// alert('[MeshCacheClient::createSGNode] success!');
+
+			// Add information necessary to dispose the data later on to the renderable:
+			renderable.node = loadedNode;
+			renderable.sgRenderer = that.sgRenderer;
 		});
 	};
 
