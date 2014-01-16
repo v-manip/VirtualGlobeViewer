@@ -17,8 +17,8 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
  
-define(['./Utils', './VectorOverlayLayer', './GeoTiling'], 
-	function(Utils, VectorOverlayLayer, GeoTiling) {
+define(['./Utils', './SceneGraphOverlayLayer', './GeoTiling'], 
+	function(Utils, SceneGraphOverlayLayer, GeoTiling) {
 
 /**************************************************************************************************************/
 
@@ -29,7 +29,7 @@ define(['./Utils', './VectorOverlayLayer', './GeoTiling'],
  */
 var W3DSLayer = function( options )
 {
-	VectorOverlayLayer.prototype.constructor.call( this, options );
+	SceneGraphOverlayLayer.prototype.constructor.call( this, options );
 	
 	this.baseUrl = options['baseUrl'];
 	this.tilePixelSize = options['tilePixelSize'] || 256;
@@ -71,7 +71,7 @@ var W3DSLayer = function( options )
 
 /**************************************************************************************************************/
 
-Utils.inherits(VectorOverlayLayer,W3DSLayer);
+Utils.inherits(SceneGraphOverlayLayer,W3DSLayer);
 
 /**************************************************************************************************************/
 

@@ -17,24 +17,24 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
- define(['./Utils', './BaseLayer', './VectorOverlayRenderer' ], 
-	function(Utils, BaseLayer, VectorOverlayRenderer) {
+ define(['./Utils', './BaseLayer', './SceneGraphOverlayRenderer' ], 
+	function(Utils, BaseLayer, SceneGraphOverlayRenderer) {
 
 /**************************************************************************************************************/
 
 
-/** @name VectorOverlayLayer
+/** @name SceneGraphOverlayLayer
 	@class
 	Base class for raster layer
 	@augments BaseLayer
-	@param options Configuration properties for the VectorOverlayLayer. See {@link BaseLayer} for base properties :
+	@param options Configuration properties for the SceneGraphOverlayLayer. See {@link BaseLayer} for base properties :
 		<ul>
 			<li>tilePixelSize : the image size for a tile, default is 256.</li>
 			<li>numberOfLevels : the maximum number of levels</li> 
 			<li>geoBound : the extent of the layer</li> 
 		</ul>
 */
-var VectorOverlayLayer = function( options )
+var SceneGraphOverlayLayer = function( options )
 {
 	BaseLayer.prototype.constructor.call( this, options );
 	
@@ -53,14 +53,14 @@ var VectorOverlayLayer = function( options )
 
 /**************************************************************************************************************/
 
-Utils.inherits( BaseLayer,VectorOverlayLayer );
+Utils.inherits( BaseLayer,SceneGraphOverlayLayer );
 
 /**************************************************************************************************************/
 
 /** 
   Attach the raster layer to the globe
  */
-VectorOverlayLayer.prototype._attach = function( g )
+SceneGraphOverlayLayer.prototype._attach = function( g )
 {
 	if ( !this._overlay )
 	{
@@ -73,13 +73,13 @@ VectorOverlayLayer.prototype._attach = function( g )
 	if ( this._overlay )
 	{
 		// Create the renderer if needed
-		if ( !g.vectorOverlayRenderer )
+		if ( !g.SceneGraphOverlayRenderer )
 		{
-			var renderer = new VectorOverlayRenderer(g);
+			var renderer = new SceneGraphOverlayRenderer(g);
 			g.vectorRendererManager.renderers.push( renderer );
-			g.vectorOverlayRenderer = renderer;
+			g.SceneGraphOverlayRenderer = renderer;
 		}
-		g.vectorOverlayRenderer.addOverlay(this);
+		g.SceneGraphOverlayRenderer.addOverlay(this);
 	}
 }
 
@@ -88,7 +88,7 @@ VectorOverlayLayer.prototype._attach = function( g )
 /** 
   Detach the raster layer from the globe
  */
-VectorOverlayLayer.prototype._detach = function()
+SceneGraphOverlayLayer.prototype._detach = function()
 {
 	// Remove raster from overlay renderer if needed
 	if ( this._overlay && this.globe.rasterOverlayRenderer )
@@ -101,6 +101,6 @@ VectorOverlayLayer.prototype._detach = function()
 
 /**************************************************************************************************************/
 
-return VectorOverlayLayer;
+return SceneGraphOverlayLayer;
 
 });

@@ -46,27 +46,13 @@ define([
 		var that = this;
 
 		requestTileData().done(function(data) {
-			// console.log('[MeshCacheClient::_sendRequest] response successfully received: ' + data);
-
 			that.createNodeFromDataAndAddToScene(data, that.baseURL, request.renderable);
-
-			var metadata = that.parseUrl(url);
-			var level = parseInt(metadata.tilelevel);
-
-			// FIXXME: Work with the received data instead of creating a dummy mesh!			
-			var mesh = that.generateDummyMesh(request.renderContext, level);
-
-			// IDEA: It would also be possible to store the model's json representation, instead of the mesh. Think about that! 
-			// FIXXME: store mesh into internal cache efficiently!
-			// FIXXME: disabled for now as it interferes with the VectorOverlayRenderable::dispose() method
-			var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
-			request.renderable.id = id;
-			//that.cache[id] = mesh;
-
-			request.renderable.mesh = mesh;
 			request.successCallback.call(request);
 
-			//console.log('[MeshCacheClient::_queryDB] requesting level: ' + metadata.tilelevel + ' / row: ' + metadata.tilerow + ' / col: ' + metadata.tilecol);			
+			// FIXXME: Test/Decide if cache is reasonable!
+			//var metadata = that.parseUrl(url);
+			//var id = metadata.tilelevel + '-' + metadata.tilerow + '-' + metadata.tilecol;
+			//that.cache[id] = data;		
 		}).fail(function() {
 			console.log('[MeshCacheClient::_sendRequest] request failed! (url: ' + url + ')');
 		});
