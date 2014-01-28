@@ -50,8 +50,8 @@ var SceneGraphOverlayRenderer = function(globe)
 		meshFormat: 'model/gltf',
 		size: 256, // in MB
 		sgRenderer: this.sgRenderer,
-		// FIXXME: how to determine baseURL?
-		baseURL: '/glTF/model/vcurtains/gltf/'
+		// FIXXME: This has to be changed to the URL where the MeshCache stores its .bin files!
+		baseURL: '/data/products/'
 	});
 
 	var self = this;

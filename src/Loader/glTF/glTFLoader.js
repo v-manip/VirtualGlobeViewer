@@ -326,30 +326,21 @@ define([
 
         handleShader: {
             value: function(entryID, description, userInfo) {
-                // No shader handling at this time
+                // NIY
+                return true;
+            }
+        },
+
+        handleProgram: {
+            value: function(entryID, description, userInfo) {
+                // NIY
                 return true;
             }
         },
 
         handleTechnique: {
             value: function(entryID, description, userInfo) {
-                // No technique handling at this time
-                return true;
-            }
-        },
-
-        handleImage: {
-            value: function(entryID, description, userInfo) {
-//                 console.log('handleImage: adding ' + entryID);
-                this.globWebResources.setEntry(entryID, null, description);
-                return true;
-            }
-        },
-
-        handleTexture: {
-            value: function(entryID, description, userInfo) {
-//                 console.log('handleTextures: adding ' + entryID);
-                this.globWebResources.setEntry(entryID, null, description);
+                // NIY
                 return true;
             }
         },
@@ -412,29 +403,6 @@ define([
 
                 this.globWebResources.setEntry(entryID, material, description);
                 
-                return true;
-            }
-        },
-
-        handleIndices: {
-            value: function(entryID, description, userInfo) {
-                this.globWebResources.setEntry(entryID, null, description);
-                // console.log('handled index: ' + entryID);
-                return true;
-            }
-        },
-
-        handleAttribute: {
-            value: function(entryID, description, userInfo) {
-                this.globWebResources.setEntry(entryID, null, description);
-                // console.log('handled attribute: ' + entryID);
-                return true;
-            }
-        },
-
-        handleLight: {
-            value: function(entryID, description, userInfo) {
-                // No light handling at this time
                 return true;
             }
         },
@@ -526,6 +494,13 @@ define([
             }
         },
 
+        handleLight: {
+            value: function(entryID, description, userInfo) {
+                // No light handling at this time
+                return true;
+            }
+        },
+
         handleNode: {
             value: function(entryID, description, userInfo) {
 
@@ -574,6 +549,95 @@ define([
             }
         },
 
+        handleScene: {
+            value: function(entryID, description, userInfo) {
+
+                if (!description.nodes) {
+                    console.log("ERROR: invalid file required nodes property is missing from scene");
+                    return false;
+                }
+
+                description.nodes.forEach(function(nodeUID) {
+                    this.buildNodeHierachy(nodeUID, userInfo.rootObj);
+                }, this);
+
+                window.rootN = userInfo.rootObj;
+                
+                /*if (this.delegate) {
+                    this.delegate.loadCompleted(scene);
+                }*/
+
+                return true;
+            }
+        },
+
+        handleImage: {
+            value: function(entryID, description, userInfo) {
+//                 console.log('handleImage: adding ' + entryID);
+                this.globWebResources.setEntry(entryID, null, description);
+                return true;
+            }
+        },
+
+        handleAnimation: {
+            value: function(entryID, description, userInfo) {
+                // NIY
+                return true;
+            }
+        },
+
+        handleAccessor: {
+            value: function(entryID, description, userInfo) {
+                this.globWebResources.setEntry(entryID, null, description);
+                return true;
+            }
+        },
+
+        handleSkin: {
+            value: function(entryID, description, userInfo) {
+                // NIY
+                return true;
+            }
+        },
+
+        handleSampler: {
+            value: function(entryID, description, userInfo) {
+                // NIY
+                return true;
+            }
+        },
+
+        handleTexture: {
+            value: function(entryID, description, userInfo) {
+//                 console.log('handleTextures: adding ' + entryID);
+                this.globWebResources.setEntry(entryID, null, description);
+                return true;
+            }
+        },
+
+        handleVideo: {
+            value: function(entryID, description, userInfo) {
+                // NIY
+                return true;
+            }
+        },
+
+        // handleIndices: {
+        //     value: function(entryID, description, userInfo) {
+        //         this.globWebResources.setEntry(entryID, null, description);
+        //         // console.log('handled index: ' + entryID);
+        //         return true;
+        //     }
+        // },
+
+        // handleAttribute: {
+        //     value: function(entryID, description, userInfo) {
+        //         this.globWebResources.setEntry(entryID, null, description);
+        //         // console.log('handled attribute: ' + entryID);
+        //         return true;
+        //     }
+        // },
+
         buildNodeHierachy: {
             value: function(nodeEntryId, parentNode) {
                 var nodeEntry = this.globWebResources.getEntry(nodeEntryId);
@@ -588,26 +652,6 @@ define([
                 }
 
                 return globWebNode;
-            }
-        },
-
-        handleScene: {
-            value: function(entryID, description, userInfo) {
-
-                if (!description.nodes) {
-                    console.log("ERROR: invalid file required nodes property is missing from scene");
-                    return false;
-                }
-
-                description.nodes.forEach(function(nodeUID) {
-                    this.buildNodeHierachy(nodeUID, userInfo.rootObj);
-                }, this);
-
-                /*if (this.delegate) {
-                    this.delegate.loadCompleted(scene);
-                }*/
-
-                return true;
             }
         }
 
