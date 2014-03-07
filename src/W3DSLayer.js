@@ -50,8 +50,8 @@ var W3DSLayer = function( options )
 	url += "&request=GetTile";
 	url += "&version="
 	// FIXXME: should be 0.4.0. At the moment the W3DS server requires version 1.0.0
-	url += options['version'] || '0.4.0';
-	// url += options['version'] || '1.0.0';
+	// url += options['version'] || '0.4.0';
+	url += options['version'] || '1.0.0';
 	url += "&crs=";
 	url += options.hasOwnProperty('crs') ? options['crs'] : 'EPSG:4326';	
 	url += "&layer=" + options['layer'];
@@ -63,7 +63,7 @@ var W3DSLayer = function( options )
 	url += options['format'] || 'image/png';
 	if ( options['time'] )
 	{
-		url += "&time=" + options.time;
+		this.time = options.time;
 	}
 	
 	this.getTileBaseUrl = url;
@@ -76,6 +76,14 @@ Utils.inherits(SceneGraphOverlayLayer,W3DSLayer);
 /**************************************************************************************************************/
 
 /**
+	Dynamically sets a time parameter for the next request
+ */
+W3DSLayer.prototype.setTime = function(time)
+{
+	this.time = time;
+}
+
+/**
 	Get an url for the given tile
  */
 W3DSLayer.prototype.getUrl = function(tile)
@@ -85,6 +93,10 @@ W3DSLayer.prototype.getUrl = function(tile)
 	url += tile.level + this.startLevel;
 	url += "&tilecol=" + tile.x;
 	url += "&tilerow=" + tile.y;
+
+	if (this.time) {
+		url += "&time=" + this.time;
+	}
 
 	return url;
 }
