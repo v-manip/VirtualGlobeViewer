@@ -69,9 +69,10 @@ define([
 		}, function(success, loadedNode) {
 			that.sgRenderer.nodes.push(loadedNode);
 
-			// Add information necessary to dispose the data later on to the renderable:
-			renderable.node = loadedNode;
-			renderable.sgRenderer = that.sgRenderer;
+			// The 'renderable' lives in the tile-world, its bucket is the connection
+			// to the rendering-world. Here the two worlds are connected. If a renderable
+			// gets disposed, the corresponding rendering data is disposed also.
+			renderable.bucket.connectToRenderer(loadedNode, that.sgRenderer)
 		});
 	};
 

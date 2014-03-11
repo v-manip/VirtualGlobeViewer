@@ -48,7 +48,7 @@ var SceneGraphOverlayLayer = function( options )
 	
 	// Internal
 	this._overlay = true; 
-	this._ready = true; // Ready is use by TileManager
+	this._ready = true; // Ready is used by TileManager
 }
 
 /**************************************************************************************************************/
@@ -73,13 +73,15 @@ SceneGraphOverlayLayer.prototype._attach = function( g )
 	if ( this._overlay )
 	{
 		// Create the renderer if needed
-		if ( !g.SceneGraphOverlayRenderer )
+		if ( !g.sceneGraphOverlayRenderer )
 		{
 			var renderer = new SceneGraphOverlayRenderer(g);
-			g.vectorRendererManager.renderers.push( renderer );
-			g.SceneGraphOverlayRenderer = renderer;
+			// FIXXME: what is the functional difference between the two registration methods?
+			// g.vectorRendererManager.renderers.push( renderer );
+			g.tileManager.addPostRenderer( renderer );
+			g.sceneGraphOverlayRenderer = renderer;
 		}
-		g.SceneGraphOverlayRenderer.addOverlay(this);
+		g.sceneGraphOverlayRenderer.addOverlay(this);
 	}
 }
 

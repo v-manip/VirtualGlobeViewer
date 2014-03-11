@@ -50,8 +50,8 @@ var SceneGraphOverlayRenderer = function(globe)
 		meshFormat: 'model/gltf',
 		size: 256, // in MB
 		sgRenderer: this.sgRenderer,
-		// FIXXME: This has to be changed to the URL where the MeshCache stores its .bin files!
-		baseURL: '/data/products/'
+		// FIXXME: This has to be changed to the URL where the MeshCache stores its additional glTF files (.bin, images, shaders)!
+		baseURL: 'http://localhost:9000/gltf/'
 	});
 
 	var self = this;
@@ -60,7 +60,6 @@ var SceneGraphOverlayRenderer = function(globe)
 			renderContext: this.tileManager.renderContext,
 			meshCache: this.meshCache,
 			successCallback: function() {
-
 				if (this.renderable) {
 					this.renderable.onRequestFinished(true);
 					this.renderable = null;
@@ -88,12 +87,70 @@ var SceneGraphOverlayRenderer = function(globe)
 
 /**************************************************************************************************************/
 
+/**
+	Bucket constructor for SceneGraphOverlay
+ */
+var Bucket = function(layer)
+{
+	this.layer = layer;
+	this.renderer = null;
+
+	this.sgNode = null;
+	this.sgRenderer = null;
+
+	// TODO : hack
+	// MH: used in VectorRendererManager::renderableSort
+	this.style = layer;
+}
+
+/**************************************************************************************************************/
+
+/**
+	Create a renderable for this bucket
+ */
+Bucket.prototype.createRenderable = function()
+{
+	return new SceneGraphOverlayRenderable(this);
+}
+
+/**************************************************************************************************************/
+
+/**
+	Create a renderable for this bucket
+ */
+Bucket.prototype.connectToRenderer = function(node, renderer)
+{
+	this.sgNode = node;
+	this.sgRenderer = renderer;
+}
+
+/**************************************************************************************************************/
+
+/**
+	Dispose the bucket (gl) data
+ */
+Bucket.prototype.dispose = function()
+{
+	if ( this.sgNode ) 
+	{
+        // FIXXME: For some Renderables this.sgRenderer is not set. Find out why!
+        if (this.sgRenderer) {
+		    this.sgRenderer.removeNode(this.sgNode);
+        }
+        this.sgNode = null;
+
+		// console.log('[SceneGraphOverlayRenderable::dispose] id: ' + this.id);
+	}
+}
+
+/**************************************************************************************************************/
+
 /** 
 	@constructor
 	Create a renderable for the overlay.
 	There is one renderable per overlay and per tile.
  */
-var VectorOverlayRenderable = function( bucket, rootNode )
+var SceneGraphOverlayRenderable = function( bucket, rootNode )
 {
 	this.bucket = bucket;
 	this.node = null;
@@ -102,6 +159,7 @@ var VectorOverlayRenderable = function( bucket, rootNode )
 	this.tile = null;
 
 	this.rootNode = rootNode;
+
 }
 
 /**************************************************************************************************************/
@@ -109,7 +167,7 @@ var VectorOverlayRenderable = function( bucket, rootNode )
 /** 
 	Called when a request is started
  */
-VectorOverlayRenderable.prototype.onRequestStarted = function(request)
+SceneGraphOverlayRenderable.prototype.onRequestStarted = function(request)
 {
 	this.request = request;
 	this.requestFinished = false;
@@ -126,7 +184,7 @@ VectorOverlayRenderable.prototype.onRequestStarted = function(request)
 /** 
 	Called when a request is finished
  */
-VectorOverlayRenderable.prototype.onRequestFinished = function(completed)
+SceneGraphOverlayRenderable.prototype.onRequestFinished = function(completed)
 {
 	this.request = null;
 	this.requestFinished = completed;
@@ -143,7 +201,7 @@ VectorOverlayRenderable.prototype.onRequestFinished = function(completed)
 /**
  * Initialize a child renderable
  */
-VectorOverlayRenderable.prototype.initChild = function(i,j,childTile)
+SceneGraphOverlayRenderable.prototype.initChild = function(i,j,childTile)
 {					
 	var renderable = this.bucket.createRenderable();
 	renderable.tile = childTile;
@@ -156,7 +214,7 @@ VectorOverlayRenderable.prototype.initChild = function(i,j,childTile)
 /** 
 	Generate child renderable
  */
-VectorOverlayRenderable.prototype.generateChild = function( tile )
+SceneGraphOverlayRenderable.prototype.generateChild = function( tile )
 {
 	var r = this.bucket.renderer;
 	r.addOverlayToTile( tile, this.bucket, this );
@@ -168,9 +226,9 @@ VectorOverlayRenderable.prototype.generateChild = function( tile )
 	Traverse renderable : add it to renderables list if there is a texture
 	Request the texture
  */
- VectorOverlayRenderable.prototype.traverse = function( manager, tile, isLeaf  )
+ SceneGraphOverlayRenderable.prototype.traverse = function( manager, tile, isLeaf  )
 {
-	if ( isLeaf && this.node )
+	if ( isLeaf && this.bucket.node )
 	{
 		manager.renderables.push( this );
 	}
@@ -186,42 +244,22 @@ VectorOverlayRenderable.prototype.generateChild = function( tile )
 /** 
 	Dispose the renderable
  */
-VectorOverlayRenderable.prototype.dispose = function(renderContext,tilePool)
+SceneGraphOverlayRenderable.prototype.dispose = function(renderContext,tilePool)
 {
-	if ( this.node ) 
-	{
-        // FIXXME: For some Renderables this.sgRenderer is not set. Find out why!
-        if (this.sgRenderer) {
-		    this.sgRenderer.removeNode(this.node);
-        }
-        this.node = null;
-
-		// console.log('[VectorOverlayRenderable::dispose] id: ' + this.id);
+	if (this.bucket) {
+		this.bucket.dispose();
 	}
 }
 
 
 /**************************************************************************************************************/
 
-/**
-	Bucket constructor for VectorOverlay
+/** 
+	Convenience function to get the data URL for the renderable
  */
-var Bucket = function(layer)
+SceneGraphOverlayRenderable.prototype.getUrl = function()
 {
-	this.layer = layer;
-	this.renderer = null;
-	// TODO : hack
-	this.style = layer;
-}
-
-/**************************************************************************************************************/
-
-/**
-	Create a renderable for this bucket
- */
-Bucket.prototype.createRenderable = function()
-{
-	return new VectorOverlayRenderable(this, this.rootNode);
+	return this.bucket.layer.getUrl(this.tile);
 }
 
 /**************************************************************************************************************/
@@ -304,10 +342,11 @@ SceneGraphOverlayRenderer.prototype.addOverlayToTile = function( tile, bucket, p
 	renderable.tile = tile;
 	tile.extension.renderer.renderables.push( renderable );
 	
-	if ( parentRenderable && parentRenderable.texture )
-	{
-		renderable.updateTextureFromParent( parentRenderable );
-	}
+	// FIXXME: How to connect parentRenderable with child for the glTF case here?
+	// if ( parentRenderable && parentRenderable.texture )
+	// {
+	// 	renderable.updateTextureFromParent( parentRenderable );
+	// }
 	
 	if ( tile.children )
 	{
@@ -441,7 +480,7 @@ SceneGraphOverlayRenderer.prototype.requestMeshDataForTile = function( renderabl
 			renderable.onRequestStarted(meshRequest);
 			meshRequest.renderable = renderable;
 			meshRequest.frameNumber = this.frameNumber;
-			meshRequest.send(renderable.bucket.layer.getUrl(renderable.tile));
+			meshRequest.send(renderable.getUrl());
 		}
 	}
 	else
@@ -449,6 +488,28 @@ SceneGraphOverlayRenderer.prototype.requestMeshDataForTile = function( renderabl
 		renderable.request.frameNumber = this.frameNumber;
 	}
 }
+
+/**************************************************************************************************************/
+
+/**
+ *	Performs tile cleanup
+ */
+SceneGraphOverlayRenderer.prototype.cleanupTile = function( tile )
+{
+	console.log('[SceneGraphOverlayRenderer::cleanupTile] disposing...');
+ 	tile.dispose();
+}
+
+/**************************************************************************************************************/
+
+// FIXXME: necessary?
+/**
+ *	Performs tile initialization when adding the renderer to the TileManager
+ */
+// SceneGraphOverlayRenderer.prototype.generate = function( tile )
+// {
+//  	tile.cleanup();
+// }
 
 /**************************************************************************************************************/
 
