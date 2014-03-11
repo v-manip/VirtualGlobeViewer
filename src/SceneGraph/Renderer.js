@@ -157,7 +157,6 @@ SceneGraphRenderer.prototype.removeNode = function(node) {
 	var index = this.nodes.indexOf(node);
 	if (index > -1) {
 		this.nodes.splice(index, 1);
-		console.log('disposed at: ' + index);
 	}
 	node.dispose(this.renderContext);
 }

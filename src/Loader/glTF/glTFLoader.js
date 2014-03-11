@@ -560,8 +560,6 @@ define([
                 description.nodes.forEach(function(nodeUID) {
                     this.buildNodeHierachy(nodeUID, userInfo.rootObj);
                 }, this);
-
-                window.rootN = userInfo.rootObj;
                 
                 /*if (this.delegate) {
                     this.delegate.loadCompleted(scene);

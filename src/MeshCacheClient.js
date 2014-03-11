@@ -67,12 +67,11 @@ define([
 		loader.load({
 			rootObj: new SceneGraph.Node()
 		}, function(success, loadedNode) {
-			that.sgRenderer.nodes.push(loadedNode);
-
 			// The 'renderable' lives in the tile-world, its bucket is the connection
-			// to the rendering-world. Here the two worlds are connected. If a renderable
-			// gets disposed, the corresponding rendering data is disposed also.
-			renderable.bucket.connectToRenderer(loadedNode, that.sgRenderer)
+			// to the rendering-world. Here the two worlds are connected, the node is
+			// added to the SceneGraph renderer internally. If a renderable gets disposed, the
+			// corresponding rendering data is disposed also.
+			renderable.bucket.addNode(loadedNode)
 		});
 	};
 

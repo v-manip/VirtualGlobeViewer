@@ -37,8 +37,7 @@ var SceneGraphOverlayRenderer = function(globe)
 	// SceneGraph:
 	var renderContext = this.tileManager.renderContext;
 
-	this.rootNode = new SceneGraph.Node();
-	this.sgRenderer = new SceneGraphRenderer(renderContext, this.rootNode, {
+	this.sgRenderer = new SceneGraphRenderer(renderContext, null, {
         minNear: renderContext.minNear,
         far: 6,
         fov: 45,
@@ -90,13 +89,16 @@ var SceneGraphOverlayRenderer = function(globe)
 /**
 	Bucket constructor for SceneGraphOverlay
  */
-var Bucket = function(layer)
+var Bucket = function(layer, sgRenderer)
 {
 	this.layer = layer;
-	this.renderer = null;
+	this.sgRenderer = sgRenderer;
+	this.sgRootNode = new SceneGraph.Node();
 
-	this.sgNode = null;
-	this.sgRenderer = null;
+	// FIXXME: implement a 'lazy' adding mechanism!
+	this.sgRenderer.nodes.push(this.sgRootNode);
+
+	this.renderer = null;
 
 	// TODO : hack
 	// MH: used in VectorRendererManager::renderableSort
@@ -110,7 +112,13 @@ var Bucket = function(layer)
  */
 Bucket.prototype.createRenderable = function()
 {
-	return new SceneGraphOverlayRenderable(this);
+	if (!this.idx) {
+		this.idx = 0;
+	}
+
+	var renderable = new SceneGraphOverlayRenderable(this);
+	renderable['id'] = this.idx++;
+	return renderable;
 }
 
 /**************************************************************************************************************/
@@ -118,10 +126,9 @@ Bucket.prototype.createRenderable = function()
 /**
 	Create a renderable for this bucket
  */
-Bucket.prototype.connectToRenderer = function(node, renderer)
+Bucket.prototype.addNode = function(node)
 {
-	this.sgNode = node;
-	this.sgRenderer = renderer;
+	this.sgRootNode.children.push(node);
 }
 
 /**************************************************************************************************************/
@@ -131,16 +138,9 @@ Bucket.prototype.connectToRenderer = function(node, renderer)
  */
 Bucket.prototype.dispose = function()
 {
-	if ( this.sgNode ) 
-	{
-        // FIXXME: For some Renderables this.sgRenderer is not set. Find out why!
-        if (this.sgRenderer) {
-		    this.sgRenderer.removeNode(this.sgNode);
-        }
-        this.sgNode = null;
-
-		// console.log('[SceneGraphOverlayRenderable::dispose] id: ' + this.id);
-	}
+	this.sgRenderer.removeNode(this.sgRootNode);
+	// FIXXME: when setting sgRootNode = null here an error is generated when deleting a W3DS layer. Investigate this!
+    this.sgRootNode.dispose(this.sgRenderer.renderContext);
 }
 
 /**************************************************************************************************************/
@@ -273,7 +273,7 @@ SceneGraphOverlayRenderer.prototype.addOverlay = function( overlay )
 	// Initialize num requests to 0
 	overlay._numRequests = 0;
 
-	var bucket = new Bucket(overlay);
+	var bucket = new Bucket(overlay, this.sgRenderer);
 	bucket.renderer = this;
 	bucket.id = this.rendererManager.bucketId++;
 	this.buckets.push( bucket );
@@ -342,7 +342,7 @@ SceneGraphOverlayRenderer.prototype.addOverlayToTile = function( tile, bucket, p
 	renderable.tile = tile;
 	tile.extension.renderer.renderables.push( renderable );
 	
-	// FIXXME: How to connect parentRenderable with child for the glTF case here?
+	// // FIXXME: How to connect parentRenderable with child for the glTF case here?
 	// if ( parentRenderable && parentRenderable.texture )
 	// {
 	// 	renderable.updateTextureFromParent( parentRenderable );
