@@ -80,6 +80,7 @@ SceneGraphOverlayLayer.prototype._attach = function( g )
 			// g.vectorRendererManager.renderers.push( renderer );
 			g.tileManager.addPostRenderer( renderer );
 			g.sceneGraphOverlayRenderer = renderer;
+			this.sgRenderer = g.sceneGraphOverlayRenderer.sgRenderer;
 		}
 		g.sceneGraphOverlayRenderer.addOverlay(this);
 	}
@@ -99,6 +100,26 @@ SceneGraphOverlayLayer.prototype._detach = function()
 	}
 	
 	BaseLayer.prototype._detach.call(this);
+}
+
+/**************************************************************************************************************/
+
+/**
+ * Set layer opacity in changing the material opacity of registered nodes
+ */
+SceneGraphOverlayLayer.prototype.opacity = function(arg) {
+    if (typeof arg == "number") {
+        this._opacity = arg;
+        if (this.sgRenderer) {
+               this.sgRenderer.visitNodes(function(node) {
+                   for (var idx = 0; idx < node.geometries.length; ++idx) {
+                       node.geometries[idx].material.opacity = arg;
+                   };
+               });
+               if (this.globe) this.globe.renderContext.requestFrame();
+           }
+    }
+    return this._opacity;
 }
 
 /**************************************************************************************************************/

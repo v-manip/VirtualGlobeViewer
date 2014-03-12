@@ -174,6 +174,7 @@ SceneGraph.Material = function()
 {
 	this.diffuse = [ 1.0, 1.0, 1.0, 1.0 ];
 	this.texture = null;
+    this.opacity = 1.0;
 }
  
 /**************************************************************************************************************/
@@ -183,7 +184,8 @@ SceneGraph.Material = function()
  */
 SceneGraph.Material.prototype.bind = function(gl,program,renderer)
 {
-	gl.uniform4fv( program.uniforms["diffuse"], this.diffuse );
+    gl.uniform4fv( program.uniforms["diffuse"], this.diffuse );
+	gl.uniform1f ( program.uniforms["opacity"], this.opacity );
 	if ( this.texture )
 		this.texture.bind( gl,renderer );
 	else

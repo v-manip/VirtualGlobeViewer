@@ -44,11 +44,13 @@ var SceneGraphRenderer = function(renderContext,node, options)
 	precision lowp float; \n\
 	varying vec2 texCoord; \n\
 	uniform vec4 diffuse; \n\
+	uniform float opacity; \n\
 	uniform sampler2D texture;\n\
 	\n\
 	void main(void) \n\
 	{ \n\
-		    gl_FragColor = diffuse * texture2D(texture, texCoord); \n\
+		    gl_FragColor.rgba = diffuse * texture2D(texture, texCoord); \n\
+		    gl_FragColor.a *= opacity; \n\
 	} \n\
 	";
 	
@@ -162,6 +164,25 @@ SceneGraphRenderer.prototype.removeNode = function(node) {
 }
 
 /**************************************************************************************************************/
+
+/**
+ *  Visit all nodes
+ */
+SceneGraphRenderer.prototype.visitNodes = function(callback) {
+    function visit(root_node, cb) {
+        for (var idx = 0; idx < root_node.children.length; ++idx) {
+            visit(root_node.children[idx], cb)
+        }
+        cb(root_node);
+    }
+
+    for (var idx = 0; idx < this.nodes.length; ++idx) {
+        visit(this.nodes[idx], callback)
+    }
+}
+
+/**************************************************************************************************************/
+
 return SceneGraphRenderer;
 
 });
