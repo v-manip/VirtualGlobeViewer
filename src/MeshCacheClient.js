@@ -65,13 +65,16 @@ define([
 		loader.initWithJSON(glTF_data, baseURL);
 
 		loader.load({
-			rootObj: new SceneGraph.Node()
+			rootObj: renderable.rootNode()
 		}, function(success, loadedNode) {
-			// The 'renderable' lives in the tile-world, its bucket is the connection
-			// to the rendering-world. Here the two worlds are connected, the node is
-			// added to the SceneGraph renderer internally. If a renderable gets disposed, the
-			// corresponding rendering data is disposed also.
-			renderable.bucket.addNode(loadedNode)
+			// NOTE: Within the glTF-loader the geometry is already attached to the rootObj (see above).
+			// It is not necessary to add the 'loadedNode' here to another node, but if you want to have
+			// more control this is the place.
+			//renderable.bucket.addNode(loadedNode)
+
+			if (!success) {
+				console.error('[MeshCacheClient::createNodeFromDataAndAddToScene] Error creating scene-graph node ...');
+			}
 		});
 	};
 
