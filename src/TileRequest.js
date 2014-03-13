@@ -109,8 +109,10 @@ var TileRequest = function(tileManager)
 	 */
 	var _handleLoadedElevation = function() 
 	{
-		self.elevations = tileManager.elevationProvider.parseElevations(_xhr.responseText);	
-		_elevationLoaded = true;
+		if (tileManager.elevationProvider) {
+			self.elevations = tileManager.elevationProvider.parseElevations(_xhr.responseText);
+			_elevationLoaded = true;
+		}
 		
 		if ( _imageLoaded )
 		{
