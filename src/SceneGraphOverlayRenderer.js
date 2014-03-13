@@ -34,30 +34,65 @@ var SceneGraphOverlayRenderer = function(globe)
 	this.meshRequests = [];
 	this.frameNumber = 0;
 	
-	// SceneGraph:
-	var renderContext = this.tileManager.renderContext;
-
-	this.sgRenderer = new SceneGraphRenderer(renderContext, null, {
-        minNear: renderContext.minNear,
-        far: 6,
-        fov: 45,
-        enableAlphaBlending: true
-    });
-
-	this.meshCache = new MeshCacheClient({
-		connectionType: 'http',
-		meshFormat: 'model/gltf',
-		size: 256, // in MB
-		sgRenderer: this.sgRenderer,
-		// FIXXME: This has to be changed to the URL where the MeshCache stores its additional glTF files (.bin, images, shaders)!
-		baseURL: 'http://localhost:9000/gltf/'
+	this.sgRenderer = this._setupSGRenderer(this.tileManager, {
+		farPlane: 6,
+		fov: 45,
+		enableAlphaBlending: true
 	});
 
+	this.meshCacheClient = this._setupMeshCacheClient(this.sgRenderer, {
+		// FIXXME: This has to be changed to the URL where the MeshCache stores its additional glTF files (.bin, images, shaders)!
+		baseUrl: 'http://localhost:9000/gltf/'
+	});
+
+	this.meshRequests = this._setupMeshRequests(this.tileManager, this.meshCacheClient);
+}
+
+/**************************************************************************************************************/
+
+/**
+ * Creates and configures the scene graph renderer
+ */
+SceneGraphOverlayRenderer.prototype._setupSGRenderer = function(tileManager, opts) {
+	var renderContext = tileManager.renderContext;
+
+	var sgRenderer = new SceneGraphRenderer(renderContext, null, {
+        minNear: renderContext.minNear,
+        far: opts.farPlane,
+        fov: opts.fov,
+        enableAlphaBlending: opts.enableAlphaBlending
+    });
+
+	return sgRenderer;
+}
+
+/**************************************************************************************************************/
+
+/**
+ * Creates and configures the MeshCache client
+ */
+SceneGraphOverlayRenderer.prototype._setupMeshCacheClient = function(sgRenderer, opts) {
+	var meshCacheClient = new MeshCacheClient({
+		sgRenderer: sgRenderer,
+		baseURL: opts.baseUrl
+	});
+
+	return meshCacheClient;
+}
+
+/**************************************************************************************************************/
+
+/**
+ * Configures the mesh requests
+ */
+SceneGraphOverlayRenderer.prototype._setupMeshRequests = function(tileManager, meshCacheClient) {
 	var self = this;
+	var meshRequests = [];
+
 	for (var i = 0; i < 4; i++) {
 		var meshRequest = new MeshRequest({
-			renderContext: this.tileManager.renderContext,
-			meshCache: this.meshCache,
+			renderContext: tileManager.renderContext,
+			meshCache: meshCacheClient,
 			successCallback: function() {
 				if (this.renderable) {
 					this.renderable.onRequestFinished(true);
@@ -80,8 +115,10 @@ var SceneGraphOverlayRenderer = function(globe)
 			}
 		});
 
-		this.meshRequests.push(meshRequest);
+		meshRequests.push(meshRequest);
 	}
+
+	return meshRequests;
 }
 
 /**************************************************************************************************************/
