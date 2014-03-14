@@ -73,7 +73,7 @@ define([
 			//renderable.bucket.addNode(loadedNode)
 
 			if (!success) {
-				console.error('[MeshCacheClient::createNodeFromDataAndAddToScene] Error creating scene-graph node ...');
+				console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Error creating scene-graph node ...');
 			}
 		});
 	};

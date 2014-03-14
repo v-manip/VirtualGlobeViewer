@@ -50,16 +50,12 @@ SceneGraphOverlayTileExtension.prototype.nodes = function() {
  */
 SceneGraphOverlayTileExtension.prototype.initChild = function(childTile, i, j)
 {
-	var sgExtension = null;
-
 	for (var n = 0; n < this.renderables.length; n++) {
 		if (this.renderables[n].initChild) {		
 			var childRenderable = this.renderables[n].initChild(i, j, childTile);
 			if (childRenderable) {
-				if (!sgExtension) {
-					sgExtension = childTile.extension.sgExtension = new SceneGraphOverlayTileExtension();
-				}
-				sgExtension.renderables.push(childRenderable);
+				childTile.extension.sgExtension = new SceneGraphOverlayTileExtension();
+				childTile.extension.sgExtension.renderables.push(childRenderable);
 			}
 		}
 	}
