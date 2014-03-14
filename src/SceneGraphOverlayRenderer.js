@@ -164,31 +164,33 @@ SceneGraphOverlayRenderer.prototype.addOverlay = function( layer )
  */
 SceneGraphOverlayRenderer.prototype.removeOverlay = function( layer )
 {
-	// FIXXME: implement correct remove functionality!
-	// var index = this.buckets.indexOf( layer._bucket );
-	// this.buckets.splice(index,1);
+	var index = this.buckets.indexOf( layer._bucket );
+	this.buckets.splice(index,1);
 	
-	// var rc = this.tileManager.renderContext;
-	// var tp = this.tileManager.tilePool;
-	// this.tileManager.visitTiles( function(tile) 
-	// 		{
-	// 			var rs = tile.extension.renderer;
-	// 			var renderable = rs ?  rs.getRenderable( layer._bucket ) : null;
-	// 			if ( renderable ) 
-	// 			{
-	// 				// Remove the renderable
-	// 				var index = rs.renderables.indexOf(renderable);
-	// 				rs.renderables.splice(index,1);
-					
-	// 				// Dispose its data
-	// 				renderable.dispose(rc,tp);
-					
-	// 				// Remove tile data if not needed anymore
-	// 				if ( rs.renderables.length == 0 )
-	// 					delete tile.extension.renderer;
-	// 			}
-	// 		}
-	// );
+	var rc = this.tileManager.renderContext;
+	var tp = this.tileManager.tilePool;
+	this.tileManager.visitTiles( function(tile) {
+		var sgex = tile.extension.sgExtension;
+		// var renderable = sgex ? sgex.getRenderable(layer._bucket) : null;
+
+		if (sgex) {
+			// FIXXME: currently all renderables no matter of which bucket are disposed:
+			for (var idx = 0; idx < sgex.renderables.length; idx++) {
+				var renderable = sgex.renderables[idx]
+
+				// Remove the renderable
+				var index = sgex.renderables.indexOf(renderable);
+				sgex.renderables.splice(index,1);
+				
+				// Dispose its data
+				renderable.dispose(rc,tp);
+			}
+			// Remove tile data if not needed anymore
+			if ( sgex.renderables.length == 0 ) {
+				delete tile.extension.sgExtension;
+			}
+		}
+	});
 }
 
 /**************************************************************************************************************/

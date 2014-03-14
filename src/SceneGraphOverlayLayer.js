@@ -25,7 +25,7 @@
 
 /** @name SceneGraphOverlayLayer
 	@class
-	Base class for raster layer
+	Base class for geometry layer
 	@augments BaseLayer
 	@param options Configuration properties for the SceneGraphOverlayLayer. See {@link BaseLayer} for base properties :
 		<ul>
@@ -96,7 +96,7 @@ SceneGraphOverlayLayer.prototype._detach = function()
 	// Remove raster from overlay renderer if needed
 	if ( this._overlay && this.globe.rasterOverlayRenderer )
 	{
-		this.globe.rasterOverlayRenderer.removeOverlay(this);
+		this.globe.sceneGraphOverlayRenderer.removeOverlay(this);
 	}
 	
 	BaseLayer.prototype._detach.call(this);
