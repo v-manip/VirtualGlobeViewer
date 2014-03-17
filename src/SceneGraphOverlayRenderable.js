@@ -81,17 +81,17 @@ SceneGraphOverlayRenderable.prototype.generateChild = function( tile )
  */
 SceneGraphOverlayRenderable.prototype.dispose = function(renderContext,tilePool)
 {
-	this.bucket.removeNode(this.sgRootNode);
-	this.sgRootNode.dispose(this.bucket.layer.sgRenderer.renderContext);
-
+	// FIXXME: For some reason 'this.sgRootNode' can be 'null', which should not be. Investigate!
+	if (this.sgRootNode) {
+		this.bucket.removeNode(this.sgRootNode);
+		this.sgRootNode.dispose(this.bucket.layer.sgRenderer.renderContext);
+	}
 	this.sgRootNode = null;
 	this.tile = null;
 	this.request = null;
 	this.requestFinished = false;
 
 }
-
-/**************************************************************************************************************/
 
 /**************************************************************************************************************/
 

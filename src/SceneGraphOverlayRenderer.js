@@ -149,10 +149,10 @@ SceneGraphOverlayRenderer.prototype.addOverlay = function( layer )
 	for ( var i = 0; i < this.tileManager.level0Tiles.length; i++ )
 	{
 		var tile = this.tileManager.level0Tiles[i];
-		if ( tile.state == Tile.State.LOADED )
-		{
+		// if ( tile.state == Tile.State.LOADED )
+		// {
 			this.addOverlayToTile( tile, bucket );
-		}
+		// }
 	}
 }
 
@@ -174,19 +174,20 @@ SceneGraphOverlayRenderer.prototype.removeOverlay = function( layer )
 		// var renderable = sgex ? sgex.getRenderable(layer._bucket) : null;
 
 		if (sgex) {
+			var renderables = sgex.renderables();
 			// FIXXME: currently all renderables no matter of which bucket are disposed:
-			for (var idx = 0; idx < sgex.renderables.length; idx++) {
-				var renderable = sgex.renderables[idx]
+			for (var idx = 0; idx < renderables.length; idx++) {
+				var renderable = renderables[idx]
 
 				// Remove the renderable
-				var index = sgex.renderables.indexOf(renderable);
-				sgex.renderables.splice(index,1);
-				
+				var index = renderables.indexOf(renderable);
+				renderables.splice(index,1);
+
 				// Dispose its data
 				renderable.dispose(rc,tp);
 			}
 			// Remove tile data if not needed anymore
-			if ( sgex.renderables.length == 0 ) {
+			if ( renderables.length == 0 ) {
 				delete tile.extension.sgExtension;
 			}
 		}
@@ -199,21 +200,22 @@ SceneGraphOverlayRenderer.prototype.removeOverlay = function( layer )
 	Add an overlay into a tile.
 	Create tile data if needed, and create the renderable for the overlay.
  */
-SceneGraphOverlayRenderer.prototype.addOverlayToTile = function( tile, bucket, parentRenderable )
+SceneGraphOverlayRenderer.prototype.addOverlayToTile = function(tile, bucket, parentRenderable)
 {
-	if (!this.overlayIntersects( tile.geoBound, bucket.layer ))
+	if (!this.overlayIntersects(tile.geoBound, bucket.layer))
 		return;
 		
 	// The 'sgExtension' is used to link to the Tile.dispose() function. When a tile is disposed,
 	// the extension's dispose function is called, where we telete the corresponding
 	// SceneGraphOverlayRenderable.
-	if ( !tile.extension.sgExtension )
+	if (!tile.extension.sgExtension) {
 		// tile.extension.sgExtension = new RendererTileData(this.rendererManager);
 		tile.extension.sgExtension = new SceneGraphOverlayTileExtension(this.rendererManager);
+	}
 	
 	var renderable = bucket.createRenderable();
 	renderable.tile = tile;
-	tile.extension.sgExtension.renderables.push( renderable );
+	tile.extension.sgExtension.addRenderable(renderable);
 	
 	// // FIXXME: How to connect parentRenderable with child for the glTF case here?
 	// if ( parentRenderable && parentRenderable.texture )
@@ -221,14 +223,14 @@ SceneGraphOverlayRenderer.prototype.addOverlayToTile = function( tile, bucket, p
 	// 	renderable.updateTextureFromParent( parentRenderable );
 	// }
 	
-	if ( tile.children )
+	if (tile.children)
 	{
 		// Add the overlay to loaded children
-		for ( var i = 0; i < 4; i++ )
+		for (var i = 0; i < 4; i++)
 		{
-			if ( tile.children[i].state == Tile.State.LOADED )
+			if (tile.children[i].state == Tile.State.LOADED)
 			{
-				this.addOverlayToTile( tile.children[i], bucket, renderable );
+				this.addOverlayToTile(tile.children[i], bucket, renderable);
 			}
 		}
 	}
@@ -405,7 +407,7 @@ SceneGraphOverlayRenderer.prototype.render = function( visible_tiles )
 	var visible_nodes = [];
 
 	// Iterate over the visible tiles and collect all scene-graph nodes for
-	// rendering. Here a sorting could be made, i.e. to render a selected W3DSLayer
+	// rendering. Here a sorting could be done, i.e. to render a selected layer
 	// with a different shader, etc.
 	for (var idx = 0; idx < visible_tiles.length; ++idx) {
 		var tile = visible_tiles[idx];
@@ -421,7 +423,7 @@ SceneGraphOverlayRenderer.prototype.render = function( visible_tiles )
  	this.sgRenderer.nodes = [];
 }
 
-/****************************f**********************************************************************************/
+/**************************************************************************************************************/
 
 /**
  * Check if renderer is applicable

@@ -26,7 +26,25 @@ define(function() {
 	SceneGraphOverlayTileExtension constructor
  */
 var SceneGraphOverlayTileExtension = function() {
-	this.renderables = [];
+	this._renderables = [];
+}
+
+/**************************************************************************************************************/
+
+/** 
+	Adds a renderable to the extension
+ */
+SceneGraphOverlayTileExtension.prototype.addRenderable = function(renderable) {
+	this._renderables.push(renderable);
+}
+
+/**************************************************************************************************************/
+
+/** 
+	
+ */
+SceneGraphOverlayTileExtension.prototype.renderables = function() {
+	return this._renderables;
 }
 
 /**************************************************************************************************************/
@@ -36,8 +54,8 @@ var SceneGraphOverlayTileExtension = function() {
  */
 SceneGraphOverlayTileExtension.prototype.nodes = function() {
 	var nodes = [];
-	for (var idx = 0; idx < this.renderables.length; ++idx) {
-		nodes.push(this.renderables[idx].sgRootNode);
+	for (var idx = 0; idx < this._renderables.length; ++idx) {
+		nodes.push(this._renderables[idx].sgRootNode);
 	};
 
 	return nodes;
@@ -50,12 +68,12 @@ SceneGraphOverlayTileExtension.prototype.nodes = function() {
  */
 SceneGraphOverlayTileExtension.prototype.initChild = function(childTile, i, j)
 {
-	for (var n = 0; n < this.renderables.length; n++) {
-		if (this.renderables[n].initChild) {		
-			var childRenderable = this.renderables[n].initChild(i, j, childTile);
+	for (var n = 0; n < this._renderables.length; n++) {
+		if (this._renderables[n].initChild) {		
+			var childRenderable = this._renderables[n].initChild(i, j, childTile);
 			if (childRenderable) {
 				childTile.extension.sgExtension = new SceneGraphOverlayTileExtension();
-				childTile.extension.sgExtension.renderables.push(childRenderable);
+				childTile.extension.sgExtension._renderables.push(childRenderable);
 			}
 		}
 	}
@@ -68,9 +86,9 @@ SceneGraphOverlayTileExtension.prototype.initChild = function(childTile, i, j)
  */
 SceneGraphOverlayTileExtension.prototype.traverse = function(tile, isLeaf)
 {
-	for ( var i = 0; i < this.renderables.length; i++ ) 
+	for ( var i = 0; i < this._renderables.length; i++ ) 
 	{
-		var renderable = this.renderables[i];
+		var renderable = this._renderables[i];
 		var bucket = renderable.bucket;
 		if ( bucket.layer._visible && bucket.layer._opacity > 0 )
 		{
@@ -88,8 +106,8 @@ SceneGraphOverlayTileExtension.prototype.traverse = function(tile, isLeaf)
 	Dispose gl data of registered renderables
  */
 SceneGraphOverlayTileExtension.prototype.dispose = function() {
-	for (var idx = 0; idx < this.renderables.length; ++idx) {
-		this.renderables[idx].dispose();
+	for (var idx = 0; idx < this._renderables.length; ++idx) {
+		this._renderables[idx].dispose();
 	};
 }
 
