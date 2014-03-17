@@ -557,6 +557,12 @@ define([
                     return false;
                 }
 
+                // FIXXME: why is the rootObj 'null' for some requests?
+                if (!userInfo.rootObj) {
+                    console.log("[glTFLoader::handleScene] No userInfo.rootObj! This should not happen!");
+                    return false;
+                }
+
                 description.nodes.forEach(function(nodeUID) {
                     this.buildNodeHierachy(nodeUID, userInfo.rootObj);
                 }, this);
@@ -640,6 +646,10 @@ define([
             value: function(nodeEntryId, parentNode) {
                 var nodeEntry = this.globWebResources.getEntry(nodeEntryId);
                 var globWebNode = nodeEntry.object;
+                // FIXXME: Why is parentNode 'null' in some cases? This should not happen ...
+                if (!parentNode) {
+                    console.log('[glTFLoader::buildNodeHierarchy] No parentNode given. This should not happen ...');
+                }
                 parentNode.children.push(globWebNode);
 
                 var children = nodeEntry.description.children;
