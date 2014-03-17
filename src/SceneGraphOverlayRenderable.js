@@ -90,7 +90,6 @@ SceneGraphOverlayRenderable.prototype.dispose = function(renderContext,tilePool)
 	this.tile = null;
 	this.request = null;
 	this.requestFinished = false;
-
 }
 
 /**************************************************************************************************************/

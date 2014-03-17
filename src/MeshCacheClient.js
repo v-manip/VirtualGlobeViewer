@@ -58,25 +58,29 @@ define([
 		});
 	};
 
-	MeshCacheClient.prototype.createNodeFromDataAndAddToScene = function(glTF_data, baseURL, renderable) {
-		var loader = Object.create(glTFLoader);
-		var that = this;
+    MeshCacheClient.prototype.createNodeFromDataAndAddToScene = function(glTF_data, baseURL, renderable) {
+        var loader = Object.create(glTFLoader);
+        var that = this;
 
-		loader.initWithJSON(glTF_data, baseURL);
+        loader.initWithJSON(glTF_data, baseURL);
 
-		loader.load({
-			rootObj: renderable.rootNode()
-		}, function(success, loadedNode) {
-			// NOTE: Within the glTF-loader the geometry is already attached to the rootObj (see above).
-			// It is not necessary to add the 'loadedNode' here to another node, but if you want to have
-			// more control this is the place.
-			//renderable.bucket.addNode(loadedNode)
+        var node = new SceneGraph.Node();
 
-			if (!success) {
-				console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Error creating scene-graph node ...');
-			}
-		});
-	};
+        loader.load({
+            rootObj: node // The loaded geometry will be added as child of the 'rootObj'
+        }, function(success) {
+            // NOTE: It is possible that a renderable requested some data and then gets disposed. At a later
+            // time the request resolves here. In this case the renderable's root node is null to indicate
+            // that circumstance. In this case we dispose the created nodes and return.
+            if (renderable.rootNode() == null) {
+                node.dispose();
+            } else if (success) {
+	            renderable.rootNode().children.push(node);
+	        } else {
+                console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Error creating scene-graph node ...');
+            }
+        });
+    };
 
 	MeshCacheClient.prototype._queryDB = function(url, request) {
 		var metadata = this.parseUrl(url);

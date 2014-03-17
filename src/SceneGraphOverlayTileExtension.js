@@ -109,6 +109,7 @@ SceneGraphOverlayTileExtension.prototype.dispose = function() {
 	for (var idx = 0; idx < this._renderables.length; ++idx) {
 		this._renderables[idx].dispose();
 	};
+	this._renderables = [];
 }
 
 /**************************************************************************************************************/
