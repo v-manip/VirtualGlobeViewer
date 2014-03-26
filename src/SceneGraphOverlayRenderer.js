@@ -209,7 +209,6 @@ SceneGraphOverlayRenderer.prototype.addOverlayToTile = function(tile, bucket, pa
 	// the extension's dispose function is called, where we telete the corresponding
 	// SceneGraphOverlayRenderable.
 	if (!tile.extension.sgExtension) {
-		// tile.extension.sgExtension = new RendererTileData(this.rendererManager);
 		tile.extension.sgExtension = new SceneGraphOverlayTileExtension(this.rendererManager);
 	}
 	
@@ -217,11 +216,10 @@ SceneGraphOverlayRenderer.prototype.addOverlayToTile = function(tile, bucket, pa
 	renderable.tile = tile;
 	tile.extension.sgExtension.addRenderable(renderable);
 	
-	// // FIXXME: How to connect parentRenderable with child for the glTF case here?
-	// if ( parentRenderable && parentRenderable.texture )
-	// {
-	// 	renderable.updateTextureFromParent( parentRenderable );
-	// }
+	if (parentRenderable && parentRenderable.rootNode().children.length) {
+		// console.log('parent available for: ' + parentRenderable.tile.level + '/' + parentRenderable.tile.x + '/' + parentRenderable.tile.y);
+		renderable.updateNodeFromParent(parentRenderable);
+	}
 	
 	if (tile.children)
 	{
@@ -322,12 +320,11 @@ SceneGraphOverlayRenderer.prototype.overlayIntersects = function( bound, overlay
 	Generate Raster overlay data on the tile.
 	The method is called by TileManager when a new tile has been generated.
  */
-SceneGraphOverlayRenderer.prototype.generateLevelZero = function( tile )
+SceneGraphOverlayRenderer.prototype.generateLevelZero = function(tile)
 {
 	// Traverse all overlays
-	for ( var i = 0; i < this.buckets.length; i++ )
-	{
-		this.addOverlayToTile(tile,this.buckets[i]);
+	for ( var i = 0; i < this.buckets.length; i++ ) {
+		this.addOverlayToTile(tile, this.buckets[i]);
 	}
 }
 
@@ -377,14 +374,35 @@ SceneGraphOverlayRenderer.prototype.cleanupTile = function( tile )
 
 /**************************************************************************************************************/
 
-// FIXXME: necessary?
 /**
- *	Performs tile initialization when adding the renderer to the TileManager
+ *	Generate the tile data
  */
-// SceneGraphOverlayRenderer.prototype.generate = function( tile )
-// {
-//  	tile.cleanup();
-// }
+SceneGraphOverlayRenderer.prototype.generate = function(tile)
+{
+	if (!tile.parent)
+	{
+		// Traverse all overlays
+		for ( var i = 0; i < this.buckets.length; i++ )
+		{
+			this.generateLevelZero(tile);
+		}
+	}
+	else {
+		var sgex = tile.parent.extension.sgExtension;
+		if (sgex) {
+			// delete renderer created at init time
+			delete tile.extension.sgExtension;
+			
+			// Now generate renderables
+			for ( var i = 0; i < sgex.renderables().length; i++ ) {
+				var renderable = sgex.renderables()[i];
+				if (renderable.generateChild) {
+					renderable.generateChild(tile);
+				}
+			}
+		}
+	}
+}
 
 /**************************************************************************************************************/
 
