@@ -100,18 +100,18 @@ SceneGraphOverlayRenderable.prototype.updateNodeFromParent = function(parent)
 	// console.log('parent x/y: ' + this.tile.parent.x + '/' + this.tile.parent.y);
 	// console.log('soll x/y: ' + (parent.tile.x * 2) + '/' + (parent.tile.y * 2));
 
-	if (this.tile.x === parent.tile.x * 2 &&
-		this.tile.y === parent.tile.y * 2) {
-		// this.parentTmpNode = parent.rootNode();
-		// FIXXME: leads to 'overlayed' rendering...
-		this.parentTmpNode = findNearestParentNode(this.tile);
-		if (!this.parentTmpNode) {
-			console.log('Found NO parent for ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
-		} else {
-			this.parentTmpNode.isVisible = true;
-			console.log('added parentTmpNode to tile: ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
-		}
-	}
+	// if (this.tile.x === parent.tile.x * 2 &&
+	// 	this.tile.y === parent.tile.y * 2) {
+	// 	// this.parentTmpNode = parent.rootNode();
+	// 	// FIXXME: leads to 'overlayed' rendering...
+	// 	this.parentTmpNode = findNearestParentNode(this.tile);
+	// 	if (!this.parentTmpNode) {
+	// 		console.log('Found NO parent for ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
+	// 	} else {
+	// 		this.parentTmpNode.isVisible = true;
+	// 		console.log('added parentTmpNode to tile: ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
+	// 	}
+	// }
 }
 
 /**************************************************************************************************************/
@@ -127,40 +127,43 @@ SceneGraphOverlayRenderable.prototype.updateNodeFromParent = function(parent)
 		this.bucket.renderer.requestMeshForTile(this);
 	} 
 
-	// For level-0 tiles we can stop here:
-	if (tile.level === 0) {
-		return;
-	}
+	// FIXXME: this is a hack for the things done in NodeTree::_determineRenderNodes!
+	this.tile.renderChildren = 0;
 
-	if (tile.extension.sgExtension) {
-		var sgex = tile.extension.sgExtension;
+	// // For level-0 tiles we can stop here:
+	// if (tile.level === 0) {
+	// 	return;
+	// }
 
-		if (!tile.parent) {
-			return;
-		}
+	// if (tile.extension.sgExtension) {
+	// 	var sgex = tile.extension.sgExtension;
 
-		var sgex_parent = tile.parent.extension.sgExtension;
+	// 	if (!tile.parent) {
+	// 		return;
+	// 	}
+
+	// 	var sgex_parent = tile.parent.extension.sgExtension;
 		
-		// If all four children are loaded (see MeshCacheClient::createNodeFromDataAndAddToScene) the
-		// 'temporary' geometry is removed and the children are rendered with their high resolution geometry:
-		if (sgex_parent.numLoadedChildren === 4) {
-			var renderable = sgex.renderables()[0];
+	// 	// If all four children are loaded (see MeshCacheClient::createNodeFromDataAndAddToScene) the
+	// 	// 'temporary' geometry is removed and the children are rendered with their high resolution geometry:
+	// 	if (sgex_parent.numLoadedChildren === 4) {
+	// 		var renderable = sgex.renderables()[0];
 
-			renderable.rootNode().isVisible = true;
+	// 		renderable.rootNode().isVisible = true;
 
-			if (renderable.parentTmpNode) {
-				renderable.parentTmpNode.isVisible = false;
-				renderable.parentTmpNode = null;
-			}
-			this.requestFrame();
+	// 		if (renderable.parentTmpNode) {
+	// 			renderable.parentTmpNode.isVisible = false;
+	// 			renderable.parentTmpNode = null;
+	// 		}
+	// 		this.requestFrame();
 
-			// console.log('showing high resolution for tile: ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
+	// 		// console.log('showing high resolution for tile: ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
 
-			if (sgex_parent.numLoadedChildren > 4) {
-				console.log('[SceneGraphOverlayRenderable.traverse] count > 4: this should not happen!');
-			}
-		}
-	}
+	// 		if (sgex_parent.numLoadedChildren > 4) {
+	// 			console.log('[SceneGraphOverlayRenderable.traverse] count > 4: this should not happen!');
+	// 		}
+	// 	}
+	// }
 }
 
 /**************************************************************************************************************/

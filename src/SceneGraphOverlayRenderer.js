@@ -17,7 +17,26 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
-define( ['./Program','./Tile','./SceneGraphOverlayTileExtension', './SceneGraphOverlayRenderable', './MeshRequest', './MeshCacheClient', './Mesh', './SceneGraph/SceneGraph', './SceneGraph/Renderer'], function(Program, Tile, SceneGraphOverlayTileExtension, SceneGraphOverlayRenderable, MeshRequest, MeshCacheClient, Mesh, SceneGraph, SceneGraphRenderer) {
+define( [
+	'./Program',
+	'./Tile',
+	'./SceneGraphOverlayTileExtension',
+	'./SceneGraphOverlayRenderable', './MeshRequest',
+	'./MeshCacheClient',
+	'./Mesh',
+	'./SceneGraph/SceneGraph',
+	'./SceneGraph/Renderer',
+	'./NodeTree'], 
+	function(Program, 
+		Tile, 
+		SceneGraphOverlayTileExtension, 
+		SceneGraphOverlayRenderable, 
+		MeshRequest, 
+		MeshCacheClient, 
+		Mesh, 
+		SceneGraph, 
+		SceneGraphRenderer,
+		NodeTree) {
 
 /**************************************************************************************************************/
 
@@ -41,6 +60,8 @@ var SceneGraphOverlayRenderer = function(globe)
 		fov: 45,
 		enableAlphaBlending: true
 	});
+
+	this.nodeTree = new NodeTree();
 
 	// FIXXME: extend the MeshCacheClient to be a generic connection to a W3DS endpoint!
 	this.meshCacheClient = this._setupMeshCacheClient(this.sgRenderer, {
@@ -411,33 +432,8 @@ SceneGraphOverlayRenderer.prototype.generate = function(tile)
  */
 SceneGraphOverlayRenderer.prototype.render = function( visible_tiles )
 {
-	// NOTE: My first approach was to simply render the root node of each
-	// bucket, because I thought that if a tile is not visible it gets disposed.
-	// There seems to be a 'caching' mechanism in Globweb that does not dispose
-	// every out-of-sight tile immediately (which is very reasonable). That has
-	// the consequence that the scene-graph nodes of a tile do not get removed
-	// and multiple 'levels' of geometry are displayed when simply rendering
-	// the bucket's root nodes.
-	// for (var idx = 0; idx < this.buckets.length; idx++) {
-	// 	this.sgRenderer.nodes.push(this.buckets[idx].rootNode());
-	// };
-
-	var visible_nodes = [];
-
-	// Iterate over the visible tiles and collect all scene-graph nodes for
-	// rendering. Here a sorting could be done, i.e. to render a selected layer
-	// with a different shader, etc.
-	for (var idx = 0; idx < visible_tiles.length; ++idx) {
-		var tile = visible_tiles[idx];
-		if (typeof tile.extension.sgExtension !== 'undefined') {
-			visible_nodes = visible_nodes.concat(tile.extension.sgExtension.nodes());
-		}
-	};
-
- 	this.sgRenderer.nodes = visible_nodes;
-
+ 	this.sgRenderer.nodes = this.nodeTree.getRenderNodes(visible_tiles);
  	this.sgRenderer.render();
- 	
  	this.sgRenderer.nodes = [];
 }
 

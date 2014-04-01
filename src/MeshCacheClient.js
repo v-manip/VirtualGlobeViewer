@@ -77,7 +77,7 @@ define([
             } else if (success) {
                 if (node.geometries.length || node.children.length) {
                     renderable.rootNode().children.push(node);
-                    renderable.rootNode().isVisible = false;
+                    // renderable.rootNode().isVisible = false;
                     // console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Received geometry for node ' + renderable.tile.level + '/' + renderable.tile.x + '/' + renderable.tile.y);
                 }
 
