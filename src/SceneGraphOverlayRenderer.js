@@ -69,7 +69,7 @@ var SceneGraphOverlayRenderer = function(globe)
 		baseUrl: 'http://localhost:9000/gltf/'
 	});
 
-	this.meshRequests = this._setupMeshRequests(this.tileManager, this.meshCacheClient, 8);
+	this.meshRequests = this._setupMeshRequests(this.tileManager, this.meshCacheClient, 4);
 }
 
 /**************************************************************************************************************/
@@ -170,9 +170,10 @@ SceneGraphOverlayRenderer.prototype.addOverlay = function( layer )
 	for ( var i = 0; i < this.tileManager.level0Tiles.length; i++ )
 	{
 		var tile = this.tileManager.level0Tiles[i];
+		// We don't care if the imagery provider has loaded its data
 		// if ( tile.state == Tile.State.LOADED )
 		// {
-			this.addOverlayToTile( tile, bucket );
+			this.addOverlayToTile(tile, bucket);
 		// }
 	}
 }
@@ -223,12 +224,10 @@ SceneGraphOverlayRenderer.prototype.removeOverlay = function( layer )
  */
 SceneGraphOverlayRenderer.prototype.addOverlayToTile = function(tile, bucket, parentRenderable)
 {
-	if (!this.overlayIntersects(tile.geoBound, bucket.layer))
+	if (!this.overlayIntersects(tile.geoBound, bucket.layer)) {
 		return;
+	}
 		
-	// The 'sgExtension' is used to link to the Tile.dispose() function. When a tile is disposed,
-	// the extension's dispose function is called, where we telete the corresponding
-	// SceneGraphOverlayRenderable.
 	if (!tile.extension.sgExtension) {
 		tile.extension.sgExtension = new SceneGraphOverlayTileExtension(this.rendererManager);
 	}
@@ -237,10 +236,10 @@ SceneGraphOverlayRenderer.prototype.addOverlayToTile = function(tile, bucket, pa
 	renderable.tile = tile;
 	tile.extension.sgExtension.addRenderable(renderable);
 	
-	if (parentRenderable && parentRenderable.rootNode().children.length) {
-		// console.log('parent available for: ' + parentRenderable.tile.level + '/' + parentRenderable.tile.x + '/' + parentRenderable.tile.y);
-		renderable.updateNodeFromParent(parentRenderable);
-	}
+	// if (parentRenderable && parentRenderable.rootNode().children.length) {
+	// 	// console.log('parent available for: ' + parentRenderable.tile.level + '/' + parentRenderable.tile.x + '/' + parentRenderable.tile.y);
+	// 	renderable.updateNodeFromParent(parentRenderable);
+	// }
 	
 	if (tile.children)
 	{
@@ -345,7 +344,8 @@ SceneGraphOverlayRenderer.prototype.generateLevelZero = function(tile)
 {
 	// Traverse all overlays
 	for ( var i = 0; i < this.buckets.length; i++ ) {
-		this.addOverlayToTile(tile, this.buckets[i]);
+		// this.addOverlayToTile(tile, this.buckets[i]);
+		this.requestMeshForTile(tile.extension.sgExtension.renderables()[0]);
 	}
 }
 
@@ -396,10 +396,12 @@ SceneGraphOverlayRenderer.prototype.cleanupTile = function( tile )
 /**************************************************************************************************************/
 
 /**
- *	Generate the tile data
+ *	Generate the SceneGraphExtension on all tiles and overlays
  */
 SceneGraphOverlayRenderer.prototype.generate = function(tile)
 {
+	// FIXXME: think through multiple curtain layer case!
+
 	if (!tile.parent)
 	{
 		// Traverse all overlays
@@ -409,17 +411,23 @@ SceneGraphOverlayRenderer.prototype.generate = function(tile)
 		}
 	}
 	else {
-		var sgex = tile.parent.extension.sgExtension;
+		// var sgex = tile.parent.extension.sgExtension;
+		var sgex = tile.extension.sgExtension;
 		if (sgex) {
-			// delete renderer created at init time
-			delete tile.extension.sgExtension;
+			// // delete renderer created at init time
+			// delete tile.extension.sgExtension;
 			
-			// Now generate renderables
-			for ( var i = 0; i < sgex.renderables().length; i++ ) {
-				var renderable = sgex.renderables()[i];
-				if (renderable.generateChild) {
-					renderable.generateChild(tile);
-				}
+			// // Now generate renderables
+			// for ( var i = 0; i < sgex.renderables().length; i++ ) {
+			// 	var renderable = sgex.renderables()[i];
+			// 	if (renderable.generateChild) {
+			// 		renderable.generateChild(tile);
+			// 	}
+			// }
+		} else {
+			for ( var i = 0; i < this.buckets.length; i++ )
+			{
+				this.addOverlayToTile(tile, this.buckets[i]);
 			}
 		}
 	}

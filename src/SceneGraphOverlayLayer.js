@@ -27,12 +27,7 @@
 	@class
 	Base class for geometry layer
 	@augments BaseLayer
-	@param options Configuration properties for the SceneGraphOverlayLayer. See {@link BaseLayer} for base properties :
-		<ul>
-			<li>tilePixelSize : the image size for a tile, default is 256.</li>
-			<li>numberOfLevels : the maximum number of levels</li> 
-			<li>geoBound : the extent of the layer</li> 
-		</ul>
+	@param options Configuration properties for the SceneGraphOverlayLayer. See {@link BaseLayer} for base properties.
 */
 var SceneGraphOverlayLayer = function( options )
 {
@@ -60,30 +55,27 @@ Utils.inherits( BaseLayer,SceneGraphOverlayLayer );
 /** 
   Attach the raster layer to the globe
  */
-SceneGraphOverlayLayer.prototype._attach = function( g )
+SceneGraphOverlayLayer.prototype._attach = function(g)
 {
-	if ( !this._overlay )
-	{
-		// Override id of background layer because of unicity of background not overlayed layer
-		this.id = 0;
+	BaseLayer.prototype._attach.call(this, g);
+		
+	if (!g.sceneGraphOverlayRenderer) {
+		var renderer = new SceneGraphOverlayRenderer(g);
+
+		// NOTE: adding the renderer as postRenderer calls the renderer.generate(tiles) method,
+		// where tiles start with an array of all level-0 tiles and recurse to their children.
+		g.tileManager.addPostRenderer(renderer);
+
+		// NOTE: For VectorRendererManager renderers no renderer.generate(tiles) is called, as
+		// those renderers are 'overlay' renderers, with no need for data from level-0 tiles
+		// (correct me, if I'm wrong, please).
+		// g.vectorRendererManager.renderers.push( renderer );
+
+		g.sceneGraphOverlayRenderer = renderer;
+		this.sgRenderer = g.sceneGraphOverlayRenderer.sgRenderer;
 	}
 
-	BaseLayer.prototype._attach.call( this, g );
-		
-	if ( this._overlay )
-	{
-		// Create the renderer if needed
-		if ( !g.sceneGraphOverlayRenderer )
-		{
-			var renderer = new SceneGraphOverlayRenderer(g);
-			// FIXXME: what is the functional difference between the two registration methods?
-			// g.vectorRendererManager.renderers.push( renderer );
-			g.tileManager.addPostRenderer( renderer );
-			g.sceneGraphOverlayRenderer = renderer;
-			this.sgRenderer = g.sceneGraphOverlayRenderer.sgRenderer;
-		}
-		g.sceneGraphOverlayRenderer.addOverlay(this);
-	}
+	g.sceneGraphOverlayRenderer.addOverlay(this);
 }
 
 /**************************************************************************************************************/

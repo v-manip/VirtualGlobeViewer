@@ -17,7 +17,7 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
-define(['./Mesh'], function(Mesh) {
+define(function() {
 
 	/** 
 	 *	@constructor
@@ -38,24 +38,7 @@ define(['./Mesh'], function(Mesh) {
 	 *	Send image request
 	 */
 	MeshRequest.prototype.send = function(url) {
-		// Let the meshCache handle the request:
 		this.meshCache.request(url, this);
-
-		// this.image = new Image();
-		// this.image.crossOrigin = '';
-		// this.image.dataType = "byte";
-
-		// var self = this;
-		// this.image.onload = function(){
-		// 	var isComplete = self.image.naturalWidth != 0 && self.image.complete;
-		// 	if ( isComplete )
-		// 	{
-		// 		self.successCallback.call(self);
-		// 	}
-		// } 
-		// this.image.onerror = this.failCallback.bind(this);
-		// this.image.onabort = this.abortCallback.bind(this);
-		// this.image.src = url;
 	}
 
 	/**************************************************************************************************************/
@@ -64,7 +47,7 @@ define(['./Mesh'], function(Mesh) {
 	 *	Abort image request
 	 */
 	MeshRequest.prototype.abort = function() {
-		this.image.src = '';
+		// this.image.src = '';
 	}
 
 	/**************************************************************************************************************/

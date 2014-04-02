@@ -49,30 +49,6 @@ SceneGraphOverlayRenderable.prototype.rootNode = function()
 
 /**************************************************************************************************************/
 
-/**
- * Initialize a child renderable
- */
-SceneGraphOverlayRenderable.prototype.initChild = function(i, j, childTile)
-{					
-	var renderable = this.bucket.createRenderable();
-	renderable.tile = childTile;
-	
-	return renderable;
-}
-
-/**************************************************************************************************************/
-
-/** 
-	Generate child renderable
- */
-SceneGraphOverlayRenderable.prototype.generateChild = function( tile )
-{
-	var r = this.bucket.renderer;
-	r.addOverlayToTile( tile, this.bucket, this );
-}
-
-/**************************************************************************************************************/
-
 // FIXXME: finding the parent node this way is a brute-force method. It leads to 'overlaying' geometry in many
 // cases, when multiple tile levels are displaying the same parent node!
 function findNearestParentNode(tile) {
@@ -90,30 +66,6 @@ function findNearestParentNode(tile) {
 	}
 }
 
-/** 
-	Update geometry from its parent
- */
-SceneGraphOverlayRenderable.prototype.updateNodeFromParent = function(parent)
-{
-	// console.log('parentlevel: ' + parent.tile.level);
-	// console.log('child x/y: ' + this.tile.x + '/' + this.tile.y);
-	// console.log('parent x/y: ' + this.tile.parent.x + '/' + this.tile.parent.y);
-	// console.log('soll x/y: ' + (parent.tile.x * 2) + '/' + (parent.tile.y * 2));
-
-	// if (this.tile.x === parent.tile.x * 2 &&
-	// 	this.tile.y === parent.tile.y * 2) {
-	// 	// this.parentTmpNode = parent.rootNode();
-	// 	// FIXXME: leads to 'overlayed' rendering...
-	// 	this.parentTmpNode = findNearestParentNode(this.tile);
-	// 	if (!this.parentTmpNode) {
-	// 		console.log('Found NO parent for ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
-	// 	} else {
-	// 		this.parentTmpNode.isVisible = true;
-	// 		console.log('added parentTmpNode to tile: ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
-	// 	}
-	// }
-}
-
 /**************************************************************************************************************/
 
 /** 
@@ -129,41 +81,6 @@ SceneGraphOverlayRenderable.prototype.updateNodeFromParent = function(parent)
 
 	// FIXXME: this is a hack for the things done in NodeTree::_determineRenderNodes!
 	this.tile.renderChildren = 0;
-
-	// // For level-0 tiles we can stop here:
-	// if (tile.level === 0) {
-	// 	return;
-	// }
-
-	// if (tile.extension.sgExtension) {
-	// 	var sgex = tile.extension.sgExtension;
-
-	// 	if (!tile.parent) {
-	// 		return;
-	// 	}
-
-	// 	var sgex_parent = tile.parent.extension.sgExtension;
-		
-	// 	// If all four children are loaded (see MeshCacheClient::createNodeFromDataAndAddToScene) the
-	// 	// 'temporary' geometry is removed and the children are rendered with their high resolution geometry:
-	// 	if (sgex_parent.numLoadedChildren === 4) {
-	// 		var renderable = sgex.renderables()[0];
-
-	// 		renderable.rootNode().isVisible = true;
-
-	// 		if (renderable.parentTmpNode) {
-	// 			renderable.parentTmpNode.isVisible = false;
-	// 			renderable.parentTmpNode = null;
-	// 		}
-	// 		this.requestFrame();
-
-	// 		// console.log('showing high resolution for tile: ' + this.tile.level + '/' + this.tile.x + '/' + this.tile.y);
-
-	// 		if (sgex_parent.numLoadedChildren > 4) {
-	// 			console.log('[SceneGraphOverlayRenderable.traverse] count > 4: this should not happen!');
-	// 		}
-	// 	}
-	// }
 }
 
 /**************************************************************************************************************/
