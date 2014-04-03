@@ -645,6 +645,12 @@ define([
         buildNodeHierachy: {
             value: function(nodeEntryId, parentNode) {
                 var nodeEntry = this.globWebResources.getEntry(nodeEntryId);
+
+                // Catch cornercase when 'nodes' property is an empty array:
+                if (!nodeEntry) {
+                    return null;
+                }
+
                 var globWebNode = nodeEntry.object;
                 // FIXXME: Why is parentNode 'null' in some cases? This should not happen ...
                 if (!parentNode) {
