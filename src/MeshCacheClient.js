@@ -82,15 +82,15 @@ define([
                 // FIXXME: Doing this here is hackish. It triggers to often, but well...
                 setTimeout(function() {
                     this.sgRenderer.renderContext.requestFrame();
-                }.bind(this), 10);
+                }.bind(this), 100);
                 // console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Received geometry for node ' + renderable.tile.level + '/' + renderable.tile.x + '/' + renderable.tile.y);
                 // }
 
-                // FIXXME: Not sure if this is the right place to keep track of the children, but for now
-                // its the easiest solution:
-                if (renderable.tile.parent) {
-                    renderable.tile.parent.extension.sgExtension.numLoadedChildren++;
-                }
+                // // FIXXME: Not sure if this is the right place to keep track of the children, but for now
+                // // its the easiest solution:
+                // if (renderable.tile.parent) {
+                //     renderable.tile.parent.extension.sgExtension.numLoadedChildren++;
+                // }
 
             } else {
                 console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Error creating scene-graph node ...');
