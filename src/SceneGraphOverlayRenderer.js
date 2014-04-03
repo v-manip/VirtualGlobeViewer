@@ -17,7 +17,27 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
-define( ['./Program','./Tile','./SceneGraphOverlayTileExtension', './SceneGraphOverlayRenderable', './MeshRequest', './MeshCacheClient', './Mesh', './SceneGraph/SceneGraph', './SceneGraph/Renderer'], function(Program, Tile, SceneGraphOverlayTileExtension, SceneGraphOverlayRenderable, MeshRequest, MeshCacheClient, Mesh, SceneGraph, SceneGraphRenderer) {
+define( [
+	'./Program',
+	'./Tile',
+	'./SceneGraphOverlayTileExtension',
+	'./SceneGraphOverlayRenderable',
+	'./MeshRequest',
+	'./MeshCacheClient',
+	'./Mesh',
+	'./SceneGraph/SceneGraph',
+	'./SceneGraph/Renderer',
+	'./ProgressiveRenderTree'],
+	function(Program, 
+		Tile, 
+		SceneGraphOverlayTileExtension, 
+		SceneGraphOverlayRenderable, 
+		MeshRequest, 
+		MeshCacheClient, 
+		Mesh, 
+		SceneGraph, 
+		SceneGraphRenderer,
+		ProgressiveRenderTree) {
 
 /**************************************************************************************************************/
 
@@ -42,13 +62,15 @@ var SceneGraphOverlayRenderer = function(globe)
 		enableAlphaBlending: true
 	});
 
+	this.progressiveRenderTree = new ProgressiveRenderTree();
+
 	// FIXXME: extend the MeshCacheClient to be a generic connection to a W3DS endpoint!
 	this.meshCacheClient = this._setupMeshCacheClient(this.sgRenderer, {
 		// FIXXME: This has to be changed to the URL where the MeshCache stores its additional glTF files (.bin, images, shaders)!
 		baseUrl: 'http://localhost:9000/gltf/'
 	});
 
-	this.meshRequests = this._setupMeshRequests(this.tileManager, this.meshCacheClient, 8);
+	this.meshRequests = this._setupMeshRequests(this.tileManager, this.meshCacheClient, 4);
 }
 
 /**************************************************************************************************************/
@@ -149,9 +171,10 @@ SceneGraphOverlayRenderer.prototype.addOverlay = function( layer )
 	for ( var i = 0; i < this.tileManager.level0Tiles.length; i++ )
 	{
 		var tile = this.tileManager.level0Tiles[i];
+		// We don't care if the imagery provider has loaded its data
 		// if ( tile.state == Tile.State.LOADED )
 		// {
-			this.addOverlayToTile( tile, bucket );
+			this.addOverlayToTile(tile, bucket);
 		// }
 	}
 }
@@ -202,14 +225,11 @@ SceneGraphOverlayRenderer.prototype.removeOverlay = function( layer )
  */
 SceneGraphOverlayRenderer.prototype.addOverlayToTile = function(tile, bucket, parentRenderable)
 {
-	if (!this.overlayIntersects(tile.geoBound, bucket.layer))
+	if (!this.overlayIntersects(tile.geoBound, bucket.layer)) {
 		return;
+	}
 		
-	// The 'sgExtension' is used to link to the Tile.dispose() function. When a tile is disposed,
-	// the extension's dispose function is called, where we telete the corresponding
-	// SceneGraphOverlayRenderable.
 	if (!tile.extension.sgExtension) {
-		// tile.extension.sgExtension = new RendererTileData(this.rendererManager);
 		tile.extension.sgExtension = new SceneGraphOverlayTileExtension(this.rendererManager);
 	}
 	
@@ -217,10 +237,9 @@ SceneGraphOverlayRenderer.prototype.addOverlayToTile = function(tile, bucket, pa
 	renderable.tile = tile;
 	tile.extension.sgExtension.addRenderable(renderable);
 	
-	// // FIXXME: How to connect parentRenderable with child for the glTF case here?
-	// if ( parentRenderable && parentRenderable.texture )
-	// {
-	// 	renderable.updateTextureFromParent( parentRenderable );
+	// if (parentRenderable && parentRenderable.rootNode().children.length) {
+	// 	// console.log('parent available for: ' + parentRenderable.tile.level + '/' + parentRenderable.tile.x + '/' + parentRenderable.tile.y);
+	// 	renderable.updateNodeFromParent(parentRenderable);
 	// }
 	
 	if (tile.children)
@@ -322,12 +341,12 @@ SceneGraphOverlayRenderer.prototype.overlayIntersects = function( bound, overlay
 	Generate Raster overlay data on the tile.
 	The method is called by TileManager when a new tile has been generated.
  */
-SceneGraphOverlayRenderer.prototype.generateLevelZero = function( tile )
+SceneGraphOverlayRenderer.prototype.generateLevelZero = function(tile)
 {
 	// Traverse all overlays
-	for ( var i = 0; i < this.buckets.length; i++ )
-	{
-		this.addOverlayToTile(tile,this.buckets[i]);
+	for ( var i = 0; i < this.buckets.length; i++ ) {
+		// this.addOverlayToTile(tile, this.buckets[i]);
+		this.requestMeshForTile(tile.extension.sgExtension.renderables()[0]);
 	}
 }
 
@@ -377,14 +396,31 @@ SceneGraphOverlayRenderer.prototype.cleanupTile = function( tile )
 
 /**************************************************************************************************************/
 
-// FIXXME: necessary?
 /**
- *	Performs tile initialization when adding the renderer to the TileManager
+ *	Generate the SceneGraphExtension on all tiles and overlays
  */
-// SceneGraphOverlayRenderer.prototype.generate = function( tile )
-// {
-//  	tile.cleanup();
-// }
+SceneGraphOverlayRenderer.prototype.generate = function(tile)
+{
+	// FIXXME: think through multiple curtain layer case!
+
+	if (!tile.parent)
+	{
+		// Traverse all overlays
+		for ( var i = 0; i < this.buckets.length; i++ )
+		{
+			this.generateLevelZero(tile);
+		}
+	}
+	else {
+		var sgex = tile.extension.sgExtension;
+		if (!sgex) {
+			for ( var i = 0; i < this.buckets.length; i++ )
+			{
+				this.addOverlayToTile(tile, this.buckets[i]);
+			}
+		}
+	}
+}
 
 /**************************************************************************************************************/
 
@@ -393,33 +429,8 @@ SceneGraphOverlayRenderer.prototype.cleanupTile = function( tile )
  */
 SceneGraphOverlayRenderer.prototype.render = function( visible_tiles )
 {
-	// NOTE: My first approach was to simply render the root node of each
-	// bucket, because I thought that if a tile is not visible it gets disposed.
-	// There seems to be a 'caching' mechanism in Globweb that does not dispose
-	// every out-of-sight tile immediately (which is very reasonable). That has
-	// the consequence that the scene-graph nodes of a tile do not get removed
-	// and multiple 'levels' of geometry are displayed when simply rendering
-	// the bucket's root nodes.
-	// for (var idx = 0; idx < this.buckets.length; idx++) {
-	// 	this.sgRenderer.nodes.push(this.buckets[idx].rootNode());
-	// };
-
-	var visible_nodes = [];
-
-	// Iterate over the visible tiles and collect all scene-graph nodes for
-	// rendering. Here a sorting could be done, i.e. to render a selected layer
-	// with a different shader, etc.
-	for (var idx = 0; idx < visible_tiles.length; ++idx) {
-		var tile = visible_tiles[idx];
-		if (typeof tile.extension.sgExtension !== 'undefined') {
-			visible_nodes = visible_nodes.concat(tile.extension.sgExtension.nodes());
-		}
-	};
-
- 	this.sgRenderer.nodes = visible_nodes;
-
+	this.sgRenderer.nodes = this.progressiveRenderTree.buildFromTiles(visible_tiles);
  	this.sgRenderer.render();
- 	
  	this.sgRenderer.nodes = [];
 }
 

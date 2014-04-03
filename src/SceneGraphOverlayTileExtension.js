@@ -27,6 +27,7 @@ define(function() {
  */
 var SceneGraphOverlayTileExtension = function() {
 	this._renderables = [];
+	this.numLoadedChildren = 0;
 }
 
 /**************************************************************************************************************/
@@ -55,28 +56,16 @@ SceneGraphOverlayTileExtension.prototype.renderables = function() {
 SceneGraphOverlayTileExtension.prototype.nodes = function() {
 	var nodes = [];
 	for (var idx = 0; idx < this._renderables.length; ++idx) {
-		nodes.push(this._renderables[idx].sgRootNode);
+		// if (this._renderables[idx].parentTmpNode) {
+		// 	this._renderables[idx].parentTmpNode.isVisible = true;
+		// 	nodes.push(this._renderables[idx].parentTmpNode);
+		// } else {
+			this._renderables[idx].rootNode().isVisible = true;
+			nodes.push(this._renderables[idx].rootNode());
+		// }
 	};
 
 	return nodes;
-}
-
-/**************************************************************************************************************/
-
-/**
-   Initialize a child renderable
- */
-SceneGraphOverlayTileExtension.prototype.initChild = function(childTile, i, j)
-{
-	for (var n = 0; n < this._renderables.length; n++) {
-		if (this._renderables[n].initChild) {		
-			var childRenderable = this._renderables[n].initChild(i, j, childTile);
-			if (childRenderable) {
-				childTile.extension.sgExtension = new SceneGraphOverlayTileExtension();
-				childTile.extension.sgExtension._renderables.push(childRenderable);
-			}
-		}
-	}
 }
 
 /**************************************************************************************************************/
@@ -92,10 +81,7 @@ SceneGraphOverlayTileExtension.prototype.traverse = function(tile, isLeaf)
 		var bucket = renderable.bucket;
 		if ( bucket.layer._visible && bucket.layer._opacity > 0 )
 		{
-			if ( renderable.traverse )
-			{
-				renderable.traverse( this.manager, tile, isLeaf  );
-			}
+			renderable.traverse(this.manager, tile, isLeaf);
 		}
 	}
 }
@@ -110,6 +96,7 @@ SceneGraphOverlayTileExtension.prototype.dispose = function() {
 		this._renderables[idx].dispose();
 	};
 	this._renderables = [];
+	this.numLoadedChildren = 0;
 }
 
 /**************************************************************************************************************/

@@ -75,11 +75,27 @@ define([
             if (renderable.rootNode() == null) {
                 node.dispose();
             } else if (success) {
-	            renderable.rootNode().children.push(node);
-	        } else {
+                // if (node.geometries.length || node.children.length) {
+                renderable.rootNode().children.push(node);
+
+                // Trigger draw update when new node is loaded
+                // FIXXME: Doing this here is hackish. It triggers to often, but well...
+                setTimeout(function() {
+                    this.sgRenderer.renderContext.requestFrame();
+                }.bind(this), 10);
+                // console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Received geometry for node ' + renderable.tile.level + '/' + renderable.tile.x + '/' + renderable.tile.y);
+                // }
+
+                // FIXXME: Not sure if this is the right place to keep track of the children, but for now
+                // its the easiest solution:
+                if (renderable.tile.parent) {
+                    renderable.tile.parent.extension.sgExtension.numLoadedChildren++;
+                }
+
+            } else {
                 console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Error creating scene-graph node ...');
             }
-        });
+        }.bind(this));
     };
 
 	MeshCacheClient.prototype._queryDB = function(url, request) {

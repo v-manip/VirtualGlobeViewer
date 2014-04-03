@@ -34,6 +34,7 @@ SceneGraph.Node = function()
 	this.geometries = [];
 	this.children = [];
 	this.matrix = null;
+	this.isVisible = true;
 }
 
 SceneGraph.Node.prototype.dispose = function(renderContext) {
@@ -140,6 +141,10 @@ SceneGraph.Node.prototype.intersectWith = function(ray,intersects)
  */
 SceneGraph.Node.prototype.render = function(renderer)
 {
+	if (!this.isVisible) {
+		return;
+	}
+
 	// render the sub nodes (maybe culling?)
 	for (var i=0; i < this.children.length; i++)
 	{
