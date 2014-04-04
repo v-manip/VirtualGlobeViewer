@@ -56,13 +56,8 @@ SceneGraphOverlayTileExtension.prototype.renderables = function() {
 SceneGraphOverlayTileExtension.prototype.nodes = function() {
 	var nodes = [];
 	for (var idx = 0; idx < this._renderables.length; ++idx) {
-		// if (this._renderables[idx].parentTmpNode) {
-		// 	this._renderables[idx].parentTmpNode.isVisible = true;
-		// 	nodes.push(this._renderables[idx].parentTmpNode);
-		// } else {
-			this._renderables[idx].rootNode().isVisible = true;
-			nodes.push(this._renderables[idx].rootNode());
-		// }
+		this._renderables[idx].rootNode().isVisible = true;
+		nodes.push(this._renderables[idx].rootNode());
 	};
 
 	return nodes;

@@ -86,8 +86,9 @@ define([
                 // console.log('[MeshCacheClient::createNodeFromDataAndAddToScene] Received geometry for node ' + renderable.tile.level + '/' + renderable.tile.x + '/' + renderable.tile.y);
                 // }
 
-                // // FIXXME: Not sure if this is the right place to keep track of the children, but for now
-                // // its the easiest solution:
+                // // NOTE: This is an idea to keep track of the loaded children. It is not used at the moment,
+                // // but I didn't want to throw away the idea. The counterpart is located in 
+                // // SceneGraphOverlayRenderable::dispose.
                 // if (renderable.tile.parent) {
                 //     renderable.tile.parent.extension.sgExtension.numLoadedChildren++;
                 // }

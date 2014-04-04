@@ -19,7 +19,6 @@ var SceneGraphOverlayRenderable = function( bucket )
 	// 1. Create the scene graph root node of this tile. The node will contain
 	//    the geometry for the tile, which is retrieved via a MeshRequest on demand.
 	this._sgRootNode = new SceneGraph.Node();
-	this.parentTmpNode = null;
 
 	// 2. Add the (currently empty) node to the bucket (which represents one
 	//    SceneGraphOverlayLayer rendered by the SceneGraphOverlayRenderer). This
@@ -49,25 +48,6 @@ SceneGraphOverlayRenderable.prototype.rootNode = function()
 
 /**************************************************************************************************************/
 
-// FIXXME: finding the parent node this way is a brute-force method. It leads to 'overlaying' geometry in many
-// cases, when multiple tile levels are displaying the same parent node!
-function findNearestParentNode(tile) {
-	if (tile.parent) {
-		if (tile.parent.extension.sgExtension) {
-			if (tile.parent.extension.sgExtension.renderables().length) {
-				if (tile.parent.extension.sgExtension.renderables()[0].rootNode().children.length) {
-					// console.log('found parent at level: ' + tile.parent.level);
-					return tile.parent.extension.sgExtension.renderables()[0].rootNode();
-				} else {
-					return findNearestParentNode(tile.parent);
-				}
-			}
-		}
-	}
-}
-
-/**************************************************************************************************************/
-
 /** 
 	Traverse renderable : add it to renderables list if there is a texture
 	Request the texture
@@ -90,15 +70,18 @@ function findNearestParentNode(tile) {
  */
 SceneGraphOverlayRenderable.prototype.dispose = function(renderContext,tilePool)
 {
-	if (this.tile.extension.sgExtension) {
-		if (this.tile.extension.sgExtension.numLoadedChildren > 0) {
-			this.tile.extension.sgExtension.numLoadedChildren--;
-		}
-		// console.log('dispose: parentchildren: ' + this.tile.extension.sgExtension.numLoadedChildren);
-	}
+	// // NOTE: This is an idea to keep track of the loaded children. It is not used at the moment,
+	// // but I didn't want to throw away the idea. The counterpart is located in
+	// // MeshCacheClient::createNodeFromDataAndAddToScene.
+	// if (this.tile.extension.sgExtension) {
+	// 	if (this.tile.extension.sgExtension.numLoadedChildren > 0) {
+	// 		this.tile.extension.sgExtension.numLoadedChildren--;
+	// 	}
+	// 	// console.log('dispose: parentchildren: ' + this.tile.extension.sgExtension.numLoadedChildren);
+	// }
 
 	this.bucket.removeNode(this._sgRootNode);
-	this._sgRootNode.dispose(this.bucket.layer.sgRenderer.renderContext);
+	this._sgRootNode.dispose(renderContext);
 	this._sgRootNode = null;
 	this.tile = null;
 	this.request = null;
