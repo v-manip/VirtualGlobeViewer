@@ -49,6 +49,8 @@ define([
         // Internal
         this._overlay = true;
         this._ready = true; // Ready is used by TileManager
+
+        this.tileManager = null;
     }
 
     /**************************************************************************************************************/
@@ -80,6 +82,8 @@ define([
         }
 
         g.sceneGraphOverlayRenderer.addOverlay(this);
+
+        this.tileManager = g.tileManager;
     }
 
     /**************************************************************************************************************/
@@ -106,6 +110,28 @@ define([
             this._opacity = arg;
         }
         return this._opacity;
+    }
+
+    /**************************************************************************************************************/
+
+    /**
+       Updates data in existing tiles
+     */
+    SceneGraphOverlayLayer.prototype.update = function() {
+        for (var i = 0; i < this.tileManager.level0Tiles.length; i++) {
+            if (this.tileManager.level0Tiles[i].extension.sgExtension) {
+                this.tileManager.level0Tiles[i].extension.sgExtension.update();
+            }
+        }
+
+        this.tileManager.renderContext.requestFrame();
+        
+        // this.tileManager.visitTiles(function(tile) {
+        //     var sgex = tile.extension.sgExtension;
+        //     if (sgex) {
+        //         sgex.update();
+        //     }
+        // });
     }
 
     /**************************************************************************************************************/

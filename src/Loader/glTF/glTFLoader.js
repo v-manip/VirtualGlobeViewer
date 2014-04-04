@@ -412,6 +412,7 @@ define([
 
                 // Create the Geometry holding Mesh and Material after it is fully loaded:
                 var geometry = new SceneGraph.Geometry();
+                geometry.name = description.name;
                 this.globWebResources.setEntry(entryID, geometry, description);
 
                 // Create the GeometryLoaderProxy to keep track if the SceneGraph.Geometry  is fully loaded:

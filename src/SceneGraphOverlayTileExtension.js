@@ -42,8 +42,8 @@ define(function() {
     /**************************************************************************************************************/
 
     /**
-
-	 */
+     
+     */
     SceneGraphOverlayTileExtension.prototype.renderables = function() {
         return this._renderables;
     }
@@ -51,8 +51,8 @@ define(function() {
     /**************************************************************************************************************/
 
     /**
-
-	 */
+     
+     */
     SceneGraphOverlayTileExtension.prototype.nodes = function() {
         var nodes = [];
         for (var idx = 0; idx < this._renderables.length; ++idx) {
@@ -75,6 +75,79 @@ define(function() {
             if (bucket.layer._visible && bucket.layer._opacity > 0) {
                 renderable.traverse(this.manager, tile, isLeaf);
             }
+        }
+    }
+
+    /**************************************************************************************************************/
+
+    /**
+        Updates the extension, e.g. to propagate a 'time' parameter change
+     */
+    SceneGraphOverlayTileExtension.prototype.update = function() {
+        if (!this._renderables.length) {
+            return;
+        }
+
+        var time = this._renderables[0].bucket.layer.time.split('/');
+        var timespan_start = time[0];
+        var timespan_end = time[1];
+
+        for (var i = 0; i < this._renderables.length; i++) {
+            var renderable = this._renderables[i],
+                geometries = [];
+
+            // if (!renderable.tile.parent) {
+            //     var tile = renderable.tile,
+            //         bucket = renderable.bucket;
+
+            //     renderable.requestFinished = false;
+            //     renderable.dispose(bucket.renderer.tileManager.renderContext);
+            // }
+
+            if (renderable.tile.children && renderable.tile.children.length) {
+                _.each(renderable.tile.children, function(child) {
+                    if (child.extension.sgExtension) {
+                        child.extension.sgExtension.update();
+                    }
+                })
+            }
+
+            // FIXXME: implement a sane way to get the geometries!
+            if (renderable.rootNode().children[0]) {
+                if (renderable.rootNode().children[0].children.length) {
+                    geometries = renderable.rootNode().children[0].children[0].geometries;
+                } else {
+                    geometries = renderable.rootNode().children[0].geometries;
+                }
+            }
+
+            _.each(geometries, function(geo) {
+                var mesh_timespan = geo.name.split('-')[1].split('_'),
+                    isUpToDate = (mesh_timespan[0] > timespan_start && mesh_timespan[0] <= timespan_end) ||
+                        (mesh_timespan[1] > timespan_start && mesh_timespan[1] <= timespan_end);
+
+                if (!isUpToDate) {
+                    var tile = renderable.tile,
+                        bucket = renderable.bucket;
+
+                    this.dispose();
+
+                    var newRenderable = bucket.createRenderable();
+                    newRenderable.tile = renderable.tile;
+                    this.addRenderable(newRenderable);
+
+                    // var renderContext = renderable.bucket.renderer.tileManager.renderContext;
+                    // if (!renderContext) {
+                    //     throw Error('[SceneGraphOverlayTileExtension::dispose] renderContext is invalid');
+                    // }
+                    // renderable.dispose(renderContext);
+
+                    console.log('scheduled for update!');
+                    return;
+                } else {
+                    console.log('tile is up to date!');
+                }
+            }.bind(this));
         }
     }
 

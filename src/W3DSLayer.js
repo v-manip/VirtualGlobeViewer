@@ -81,6 +81,7 @@ Utils.inherits(SceneGraphOverlayLayer,W3DSLayer);
 W3DSLayer.prototype.setTime = function(time)
 {
 	this.time = time;
+	this.update();
 }
 
 /**************************************************************************************************************/

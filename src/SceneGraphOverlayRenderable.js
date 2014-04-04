@@ -68,7 +68,7 @@ define([
     /**
         Dispose the renderable
      */
-    SceneGraphOverlayRenderable.prototype.dispose = function(renderContext, tilePool) {
+    SceneGraphOverlayRenderable.prototype.dispose = function(renderContext) {
         // // NOTE: This is an idea to keep track of the loaded children. It is not used at the moment,
         // // but I didn't want to throw away the idea. The counterpart is located in
         // // MeshCacheClient::createNodeFromDataAndAddToScene.
@@ -81,9 +81,11 @@ define([
 
         this.bucket.removeNode(this._sgRootNode);
         this._sgRootNode.dispose(renderContext);
-        this._sgRootNode = null;
-        this.tile = null;
-        this.request = null;
+        // this._sgRootNode = null;
+        // CAUTION: Do NOT set this.tile to 'null' here! Otherwise the logic in SceneGraphOverlayTileExtension::update
+        //  will not work!
+        // this.tile = null;
+        // this.request = null;
         this.requestFinished = false;
     }
 
