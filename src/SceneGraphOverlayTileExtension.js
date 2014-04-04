@@ -88,7 +88,11 @@ SceneGraphOverlayTileExtension.prototype.traverse = function(tile, isLeaf)
  */
 SceneGraphOverlayTileExtension.prototype.dispose = function() {
 	for (var idx = 0; idx < this._renderables.length; ++idx) {
-		this._renderables[idx].dispose();
+		var renderContext = this._renderables[idx].bucket.renderer.tileManager.renderContext;
+		if (!renderContext) {
+			throw Error('[SceneGraphOverlayTileExtension::dispose] renderContext is invalid');
+		}
+		this._renderables[idx].dispose(renderContext);
 	};
 	this._renderables = [];
 	this.numLoadedChildren = 0;
