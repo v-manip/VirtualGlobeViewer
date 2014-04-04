@@ -396,9 +396,14 @@ define([
         Render the overlays for the given tiles
      */
     SceneGraphOverlayRenderer.prototype.render = function(visible_tiles) {
-        this.sgRenderer.nodes = this.progressiveRenderTree.buildFromTiles(visible_tiles);
-        this.sgRenderer.render();
-        this.sgRenderer.nodes = [];
+        for (var idx = 0; idx < this.buckets.length; idx++) {
+            var bucket = this.buckets[idx];
+
+            // FIXXME: make it work with multiple buckets!
+            this.sgRenderer.nodes = this.progressiveRenderTree.buildFromTiles(visible_tiles);
+            this.sgRenderer.render(bucket.style.opacity());
+            this.sgRenderer.nodes = [];
+        };
     }
 
     /**************************************************************************************************************/

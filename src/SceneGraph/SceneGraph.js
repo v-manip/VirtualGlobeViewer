@@ -139,7 +139,7 @@ SceneGraph.Node.prototype.intersectWith = function(ray,intersects)
 /**
  *	Render a node
  */
-SceneGraph.Node.prototype.render = function(renderer)
+SceneGraph.Node.prototype.render = function(renderer, opacity)
 {
 	if (!this.isVisible) {
 		return;
@@ -148,7 +148,7 @@ SceneGraph.Node.prototype.render = function(renderer)
 	// render the sub nodes (maybe culling?)
 	for (var i=0; i < this.children.length; i++)
 	{
-		renderer.renderNode( this.children[i] );
+		renderer.renderNode( this.children[i], opacity );
 	}
 	
 	// Render geometries if any
@@ -162,7 +162,7 @@ SceneGraph.Node.prototype.render = function(renderer)
 		for (var i=0; i < this.geometries.length; i++)
 		{
 			var geom = this.geometries[i];
-			geom.material.bind(gl,renderer.program,renderer);			
+			geom.material.bind(gl,renderer.program,renderer,opacity);
 			geom.mesh.render(gl,renderer.program);
 		}
 	}
@@ -187,10 +187,14 @@ SceneGraph.Material = function()
 /**
  * Bind the material in the gl context
  */
-SceneGraph.Material.prototype.bind = function(gl,program,renderer)
+SceneGraph.Material.prototype.bind = function(gl,program,renderer,global_opacity)
 {
+	var opacity = this.opacity;
+	if (typeof global_opacity !== 'undefined') {
+		opacity = opacity * global_opacity;
+	}
     gl.uniform4fv( program.uniforms["diffuse"], this.diffuse );
-	gl.uniform1f ( program.uniforms["opacity"], this.opacity );
+	gl.uniform1f ( program.uniforms["opacity"], opacity );
 	if ( this.texture )
 		this.texture.bind( gl,renderer );
 	else

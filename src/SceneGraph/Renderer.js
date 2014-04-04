@@ -88,7 +88,7 @@ var SceneGraphRenderer = function(renderContext,node, options)
 /**
  *	Recursive method to render node
  */
-SceneGraphRenderer.prototype.renderNode = function(node,parent)
+SceneGraphRenderer.prototype.renderNode = function(node, opacity)
 {
 	var rc = this.renderContext;
 	var gl = rc.gl;
@@ -101,7 +101,7 @@ SceneGraphRenderer.prototype.renderNode = function(node,parent)
 		this.matrixStack.push( mat );
 	}
 	
-	node.render(this);
+	node.render(this, opacity);
 	
 	if (node.matrix)
 	{
@@ -112,9 +112,9 @@ SceneGraphRenderer.prototype.renderNode = function(node,parent)
 /**************************************************************************************************************/
 
 /**
- *	Main render
+ *	Main render. Takes a global opacity as optional argument.
  */
-SceneGraphRenderer.prototype.render = function()
+SceneGraphRenderer.prototype.render = function(opacity)
 {
 	var rc = this.renderContext;
 	var gl = rc.gl;
@@ -141,7 +141,7 @@ SceneGraphRenderer.prototype.render = function()
 	
 	for ( var i = 0; i < this.nodes.length; i++ )
 	{
-		this.renderNode(this.nodes[i]);
+		this.renderNode(this.nodes[i], opacity);
 	}
 
 	if (this.enableAlphaBlending) {
