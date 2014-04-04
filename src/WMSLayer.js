@@ -77,7 +77,7 @@ var WMSLayer = function( options )
 	url += this.tilePixelSize;
 	if ( options.hasOwnProperty('time') )
 	{
-		url += "&time=" + options.time;
+		this.time = options.time;
 	}
 	
 	this.getMapBaseUrl = url;
@@ -86,6 +86,16 @@ var WMSLayer = function( options )
 /**************************************************************************************************************/
 
 Utils.inherits(RasterLayer,WMSLayer);
+
+/**************************************************************************************************************/
+
+/**
+	Dynamically sets a time parameter for the next request
+ */
+WMSLayer.prototype.setTime = function(time)
+{
+	this.time = time;
+}
 
 /**************************************************************************************************************/
 
@@ -106,8 +116,9 @@ WMSLayer.prototype.getUrl = function(tile)
 	url += geoBound.east;
 	url += ",";
 	url += geoBound.north;
-
-//	console.log(url);
+	if (this.time) {
+		url += "&time=" + this.time;
+	}
 	
 	return url;
 }

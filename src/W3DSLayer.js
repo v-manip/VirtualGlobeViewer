@@ -83,6 +83,8 @@ W3DSLayer.prototype.setTime = function(time)
 	this.time = time;
 }
 
+/**************************************************************************************************************/
+
 /**
 	Get an url for the given tile
  */
@@ -93,7 +95,6 @@ W3DSLayer.prototype.getUrl = function(tile)
 	url += tile.level + this.startLevel;
 	url += "&tilecol=" + tile.x;
 	url += "&tilerow=" + tile.y;
-
 	if (this.time) {
 		url += "&time=" + this.time;
 	}

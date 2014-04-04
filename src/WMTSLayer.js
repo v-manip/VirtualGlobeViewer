@@ -61,7 +61,7 @@ var WMTSLayer = function( options )
 	url += options['format'] || 'image/png';
 	if ( options['time'] )
 	{
-		url += "&time=" + options.time;
+		this.time = options.time;
 	}
 	
 	this.getTileBaseUrl = url;
@@ -70,6 +70,16 @@ var WMTSLayer = function( options )
 /**************************************************************************************************************/
 
 Utils.inherits(RasterLayer,WMTSLayer);
+
+/**************************************************************************************************************/
+
+/**
+	Dynamically sets a time parameter for the next request
+ */
+WMTSLayer.prototype.setTime = function(time)
+{
+	this.time = time;
+}
 
 /**************************************************************************************************************/
 
@@ -83,7 +93,9 @@ WMTSLayer.prototype.getUrl = function(tile)
 	url += tile.level + this.startLevel;
 	url += "&tilecol=" + tile.x;
 	url += "&tilerow=" + tile.y;
-	
+	if (this.time) {
+		url += "&time=" + this.time;
+	}	
 	return url;
 }
 
