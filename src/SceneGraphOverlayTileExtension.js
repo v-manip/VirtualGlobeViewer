@@ -19,87 +19,83 @@
 
 define(function() {
 
-/**************************************************************************************************************/
+    /**************************************************************************************************************/
 
-/** 
-	@constructor
-	SceneGraphOverlayTileExtension constructor
- */
-var SceneGraphOverlayTileExtension = function() {
-	this._renderables = [];
-	this.numLoadedChildren = 0;
-}
+    /**
+		@constructor
+		SceneGraphOverlayTileExtension constructor
+	 */
+    var SceneGraphOverlayTileExtension = function() {
+        this._renderables = [];
+        this.numLoadedChildren = 0;
+    }
 
-/**************************************************************************************************************/
+    /**************************************************************************************************************/
 
-/** 
-	Adds a renderable to the extension
- */
-SceneGraphOverlayTileExtension.prototype.addRenderable = function(renderable) {
-	this._renderables.push(renderable);
-}
+    /**
+		Adds a renderable to the extension
+	 */
+    SceneGraphOverlayTileExtension.prototype.addRenderable = function(renderable) {
+        this._renderables.push(renderable);
+    }
 
-/**************************************************************************************************************/
+    /**************************************************************************************************************/
 
-/** 
-	
- */
-SceneGraphOverlayTileExtension.prototype.renderables = function() {
-	return this._renderables;
-}
+    /**
 
-/**************************************************************************************************************/
+	 */
+    SceneGraphOverlayTileExtension.prototype.renderables = function() {
+        return this._renderables;
+    }
 
-/** 
-	
- */
-SceneGraphOverlayTileExtension.prototype.nodes = function() {
-	var nodes = [];
-	for (var idx = 0; idx < this._renderables.length; ++idx) {
-		this._renderables[idx].rootNode().isVisible = true;
-		nodes.push(this._renderables[idx].rootNode());
-	};
+    /**************************************************************************************************************/
 
-	return nodes;
-}
+    /**
 
-/**************************************************************************************************************/
+	 */
+    SceneGraphOverlayTileExtension.prototype.nodes = function() {
+        var nodes = [];
+        for (var idx = 0; idx < this._renderables.length; ++idx) {
+            this._renderables[idx].rootNode().isVisible = true;
+            nodes.push(this._renderables[idx].rootNode());
+        };
 
-/**
-   Traverse the renderables of a tile
- */
-SceneGraphOverlayTileExtension.prototype.traverse = function(tile, isLeaf)
-{
-	for ( var i = 0; i < this._renderables.length; i++ ) 
-	{
-		var renderable = this._renderables[i];
-		var bucket = renderable.bucket;
-		if ( bucket.layer._visible && bucket.layer._opacity > 0 )
-		{
-			renderable.traverse(this.manager, tile, isLeaf);
-		}
-	}
-}
+        return nodes;
+    }
 
-/**************************************************************************************************************/
+    /**************************************************************************************************************/
 
-/** 
-	Dispose gl data of registered renderables
- */
-SceneGraphOverlayTileExtension.prototype.dispose = function() {
-	for (var idx = 0; idx < this._renderables.length; ++idx) {
-		var renderContext = this._renderables[idx].bucket.renderer.tileManager.renderContext;
-		if (!renderContext) {
-			throw Error('[SceneGraphOverlayTileExtension::dispose] renderContext is invalid');
-		}
-		this._renderables[idx].dispose(renderContext);
-	};
-	this._renderables = [];
-	this.numLoadedChildren = 0;
-}
+    /**
+        Traverse the renderables of a tile
+	 */
+    SceneGraphOverlayTileExtension.prototype.traverse = function(tile, isLeaf) {
+        for (var i = 0; i < this._renderables.length; i++) {
+            var renderable = this._renderables[i];
+            var bucket = renderable.bucket;
+            if (bucket.layer._visible && bucket.layer._opacity > 0) {
+                renderable.traverse(this.manager, tile, isLeaf);
+            }
+        }
+    }
 
-/**************************************************************************************************************/
+    /**************************************************************************************************************/
 
-return SceneGraphOverlayTileExtension;
+    /**
+		Dispose gl data of registered renderables
+	 */
+    SceneGraphOverlayTileExtension.prototype.dispose = function() {
+        for (var idx = 0; idx < this._renderables.length; ++idx) {
+            var renderContext = this._renderables[idx].bucket.renderer.tileManager.renderContext;
+            if (!renderContext) {
+                throw Error('[SceneGraphOverlayTileExtension::dispose] renderContext is invalid');
+            }
+            this._renderables[idx].dispose(renderContext);
+        };
+        this._renderables = [];
+        this.numLoadedChildren = 0;
+    }
 
+    /**************************************************************************************************************/
+
+    return SceneGraphOverlayTileExtension;
 });

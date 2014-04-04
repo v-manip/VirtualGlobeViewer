@@ -17,105 +17,106 @@
  * along with GlobWeb. If not, see <http://www.gnu.org/licenses/>.
  ***************************************/
 
- define(['./Utils', './BaseLayer', './SceneGraphOverlayRenderer' ], 
-	function(Utils, BaseLayer, SceneGraphOverlayRenderer) {
+define([
+    './Utils',
+    './BaseLayer',
+    './SceneGraphOverlayRenderer'
+], function(
+    Utils,
+    BaseLayer,
+    SceneGraphOverlayRenderer) {
 
-/**************************************************************************************************************/
+    /**************************************************************************************************************/
 
 
-/** @name SceneGraphOverlayLayer
-	@class
-	Base class for geometry layer
-	@augments BaseLayer
-	@param options Configuration properties for the SceneGraphOverlayLayer. See {@link BaseLayer} for base properties.
-*/
-var SceneGraphOverlayLayer = function( options )
-{
-	BaseLayer.prototype.constructor.call( this, options );
-	
-	// Base properties
-	this.tilePixelSize = -1;
-	this.tiling = null;
-	this.numberOfLevels = -1;
-	this.geoBound = options.geoBound || null;
-	this.coordinates = options.coordinates || null;
-	this.zIndex = options.zIndex || 0;
-	
-	// Internal
-	this._overlay = true; 
-	this._ready = true; // Ready is used by TileManager
-}
+    /** @name SceneGraphOverlayLayer
+		@class
+		Base class for geometry layer
+		@augments BaseLayer
+		@param options Configuration properties for the SceneGraphOverlayLayer. See {@link BaseLayer} for base properties.
+	*/
+    var SceneGraphOverlayLayer = function(options) {
+        BaseLayer.prototype.constructor.call(this, options);
 
-/**************************************************************************************************************/
+        // Base properties
+        this.tilePixelSize = -1;
+        this.tiling = null;
+        this.numberOfLevels = -1;
+        this.geoBound = options.geoBound || null;
+        this.coordinates = options.coordinates || null;
+        this.zIndex = options.zIndex || 0;
 
-Utils.inherits( BaseLayer,SceneGraphOverlayLayer );
-
-/**************************************************************************************************************/
-
-/** 
-  Attach the raster layer to the globe
- */
-SceneGraphOverlayLayer.prototype._attach = function(g)
-{
-	BaseLayer.prototype._attach.call(this, g);
-		
-	if (!g.sceneGraphOverlayRenderer) {
-		var renderer = new SceneGraphOverlayRenderer(g);
-
-		// NOTE: adding the renderer as postRenderer calls the renderer.generate(tiles) method,
-		// where tiles start with an array of all level-0 tiles and recurse to their children.
-		g.tileManager.addPostRenderer(renderer);
-
-		// NOTE: For VectorRendererManager renderers no renderer.generate(tiles) is called, as
-		// those renderers are 'overlay' renderers, with no need for data from level-0 tiles
-		// (correct me, if I'm wrong, please).
-		// g.vectorRendererManager.renderers.push( renderer );
-
-		g.sceneGraphOverlayRenderer = renderer;
-		this.sgRenderer = g.sceneGraphOverlayRenderer.sgRenderer;
-	}
-
-	g.sceneGraphOverlayRenderer.addOverlay(this);
-}
-
-/**************************************************************************************************************/
-
-/** 
-  Detach the raster layer from the globe
- */
-SceneGraphOverlayLayer.prototype._detach = function()
-{
-	// Remove raster from overlay renderer if needed
-	if ( this._overlay && this.globe.rasterOverlayRenderer )
-	{
-		this.globe.sceneGraphOverlayRenderer.removeOverlay(this);
-	}
-	
-	BaseLayer.prototype._detach.call(this);
-}
-
-/**************************************************************************************************************/
-
-/**
- * Set layer opacity in changing the material opacity of registered nodes
- */
-SceneGraphOverlayLayer.prototype.opacity = function(arg) {
-    if (typeof arg == "number") {
-        this._opacity = arg;
-        if (this.sgRenderer) {
-               this.sgRenderer.visitNodes(function(node) {
-                   for (var idx = 0; idx < node.geometries.length; ++idx) {
-                       node.geometries[idx].material.opacity = arg;
-                   };
-               });
-               if (this.globe) this.globe.renderContext.requestFrame();
-           }
+        // Internal
+        this._overlay = true;
+        this._ready = true; // Ready is used by TileManager
     }
-    return this._opacity;
-}
 
-/**************************************************************************************************************/
+    /**************************************************************************************************************/
 
-return SceneGraphOverlayLayer;
+    Utils.inherits(BaseLayer, SceneGraphOverlayLayer);
 
+    /**************************************************************************************************************/
+
+    /**
+	  Attach the raster layer to the globe
+	 */
+    SceneGraphOverlayLayer.prototype._attach = function(g) {
+        BaseLayer.prototype._attach.call(this, g);
+
+        if (!g.sceneGraphOverlayRenderer) {
+            var renderer = new SceneGraphOverlayRenderer(g);
+
+            // NOTE: adding the renderer as postRenderer calls the renderer.generate(tiles) method,
+            // where tiles start with an array of all level-0 tiles and recurse to their children.
+            g.tileManager.addPostRenderer(renderer);
+
+            // NOTE: For VectorRendererManager renderers no renderer.generate(tiles) is called, as
+            // those renderers are 'overlay' renderers, with no need for data from level-0 tiles
+            // (correct me, if I'm wrong, please).
+            // g.vectorRendererManager.renderers.push( renderer );
+
+            g.sceneGraphOverlayRenderer = renderer;
+            this.sgRenderer = g.sceneGraphOverlayRenderer.sgRenderer;
+        }
+
+        g.sceneGraphOverlayRenderer.addOverlay(this);
+    }
+
+    /**************************************************************************************************************/
+
+    /**
+	  Detach the raster layer from the globe
+	 */
+    SceneGraphOverlayLayer.prototype._detach = function() {
+        // Remove raster from overlay renderer if needed
+        if (this._overlay && this.globe.rasterOverlayRenderer) {
+            this.globe.sceneGraphOverlayRenderer.removeOverlay(this);
+        }
+
+        BaseLayer.prototype._detach.call(this);
+    }
+
+    /**************************************************************************************************************/
+
+    /**
+       Set layer opacity in changing the material opacity of registered nodes
+     */
+    SceneGraphOverlayLayer.prototype.opacity = function(arg) {
+        if (typeof arg == "number") {
+            this._opacity = arg;
+            if (this.sgRenderer) {
+                this.sgRenderer.visitNodes(function(node) {
+                    for (var idx = 0; idx < node.geometries.length; ++idx) {
+                        node.geometries[idx].material.opacity = arg;
+                    };
+                });
+                if (this.globe) this.globe.renderContext.requestFrame();
+            }
+        }
+        return this._opacity;
+    }
+
+    /**************************************************************************************************************/
+
+    return SceneGraphOverlayLayer;
 });

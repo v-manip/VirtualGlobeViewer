@@ -1,4 +1,4 @@
-define([], function() {
+define(function() {
     /* 
      * A render tree that takes an array of visible tiles and computes a node structure from it renders the
      * geometry contained in the tiles in a progressive manner. The internal algorithm tries to (recursively)
