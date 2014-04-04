@@ -324,7 +324,9 @@ define([
     SceneGraphOverlayRenderer.prototype.generateLevelZero = function(tile) {
         // Traverse all overlays
         for (var i = 0; i < this.buckets.length; i++) {
-            // this.addOverlayToTile(tile, this.buckets[i]);
+            if (!tile.extension.sgExtension) {
+                this.addOverlayToTile(tile, this.buckets[i]);
+            }
             this.requestMeshForTile(tile.extension.sgExtension.renderables()[0]);
         }
     }
@@ -368,7 +370,7 @@ define([
     /**************************************************************************************************************/
 
     /**
-      	Generate the SceneGraphExtension on all tiles and overlays
+        Generate the SceneGraphExtension on all tiles and overlays
      */
     SceneGraphOverlayRenderer.prototype.generate = function(tile) {
         // FIXXME: think through multiple curtain layer case!
