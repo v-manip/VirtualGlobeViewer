@@ -24,7 +24,7 @@ define(['../Program','../glMatrix'], function(Program) {
 /**
  *	@constructor SceneGraph Renderer
  */
-var SceneGraphRenderer = function(renderContext,node, options)
+var SceneGraphRenderer = function(renderContext, node, options)
 {
 	var vertexShader = "\
 	attribute vec3 vertex; \n\
@@ -88,7 +88,7 @@ var SceneGraphRenderer = function(renderContext,node, options)
 /**
  *	Recursive method to render node
  */
-SceneGraphRenderer.prototype.renderNode = function(node, opacity)
+SceneGraphRenderer.prototype.renderNode = function(node, renderOpts)
 {
 	var rc = this.renderContext;
 	var gl = rc.gl;
@@ -101,7 +101,7 @@ SceneGraphRenderer.prototype.renderNode = function(node, opacity)
 		this.matrixStack.push( mat );
 	}
 	
-	node.render(this, opacity);
+	node.render(this, renderOpts);
 	
 	if (node.matrix)
 	{
@@ -112,9 +112,9 @@ SceneGraphRenderer.prototype.renderNode = function(node, opacity)
 /**************************************************************************************************************/
 
 /**
- *	Main render. Takes a global opacity as optional argument.
+ *	Main render. Takes a render options as argument.
  */
-SceneGraphRenderer.prototype.render = function(opacity)
+SceneGraphRenderer.prototype.render = function(renderOpts)
 {
 	var rc = this.renderContext;
 	var gl = rc.gl;
@@ -141,7 +141,7 @@ SceneGraphRenderer.prototype.render = function(opacity)
 	
 	for ( var i = 0; i < this.nodes.length; i++ )
 	{
-		this.renderNode(this.nodes[i], opacity);
+		this.renderNode(this.nodes[i], renderOpts);
 	}
 
 	if (this.enableAlphaBlending) {
