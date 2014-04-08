@@ -46,6 +46,8 @@ define([
         this.coordinates = options.coordinates || null;
         this.zIndex = options.zIndex || 0;
 
+        this.renderOptions = options.renderOptions || null;
+
         // Internal
         this._overlay = true;
         this._ready = true; // Ready is used by TileManager
@@ -64,7 +66,7 @@ define([
         BaseLayer.prototype._attach.call(this, g);
 
         if (!g.sceneGraphOverlayRenderer) {
-            var renderer = new SceneGraphOverlayRenderer(g);
+            var renderer = new SceneGraphOverlayRenderer(g, this.renderOptions);
 
             // NOTE: adding the renderer as postRenderer calls the renderer.generate(tiles) method,
             // where tiles start with an array of all level-0 tiles and recurse to their children.

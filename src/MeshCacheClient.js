@@ -79,7 +79,8 @@ define([
                 renderable.rootNode().children.push(node);
 
                 // Trigger draw update when new node is loaded
-                // FIXXME: Doing this here is hackish. It triggers to often, but well...
+                // FIXXME: Doing this here is a bit hackish. It triggers to often, as not all incoming nodes are
+                // displayed immediately. But well...
                 setTimeout(function() {
                     this.sgRenderer.renderContext.requestFrame();
                 }.bind(this), 100);

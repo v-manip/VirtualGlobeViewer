@@ -86,6 +86,16 @@ var SceneGraphRenderer = function(renderContext,node, options)
 /**************************************************************************************************************/
 
 /**
+ *	Sets the shader program from outside:
+ */
+SceneGraphRenderer.prototype.setProgram = function(program)
+{
+	this.program = program;
+}
+
+/**************************************************************************************************************/
+
+/**
  *	Recursive method to render node
  */
 SceneGraphRenderer.prototype.renderNode = function(node, opacity)

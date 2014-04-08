@@ -27,8 +27,10 @@ define([
     './Mesh',
     './SceneGraph/SceneGraph',
     './SceneGraph/Renderer',
-    './ProgressiveRenderTree'
-], function(Program,
+    './ProgressiveRenderTree',
+    './SceneGraph/EffectLibrary/EffectLibrary',
+], function(
+    Program,
     Tile,
     SceneGraphOverlayTileExtension,
     SceneGraphOverlayRenderable,
@@ -37,7 +39,8 @@ define([
     Mesh,
     SceneGraph,
     SceneGraphRenderer,
-    ProgressiveRenderTree) {
+    ProgressiveRenderTree,
+    EffectLibrary) {
 
     /**************************************************************************************************************/
 
@@ -45,7 +48,7 @@ define([
 		@constructor
 		SceneGraphOverlayRenderer constructor
 	 */
-    var SceneGraphOverlayRenderer = function(globe) {
+    var SceneGraphOverlayRenderer = function(globe, options) {
         // FIXXME: I don't think we need this render manager in here
         this.rendererManager = globe.vectorRendererManager;
 
@@ -60,7 +63,7 @@ define([
             fov: 45,
             enableAlphaBlending: true
         });
-
+        this.effectLibrary = new EffectLibrary();
         this.progressiveRenderTree = new ProgressiveRenderTree();
 
         // FIXXME: extend the MeshCacheClient to be a generic connection to a W3DS endpoint!
@@ -70,6 +73,10 @@ define([
         });
 
         this.meshRequests = this._setupMeshRequests(this.tileManager, this.meshCacheClient, 4);
+
+        if (options.colorRamp) {
+            this.setColorRamp(options.colorRamp);
+        }
     }
 
     /**************************************************************************************************************/
@@ -80,6 +87,7 @@ define([
     SceneGraphOverlayRenderer.prototype._setupSGRenderer = function(tileManager, opts) {
         var renderContext = tileManager.renderContext;
 
+        // FIXXME: directly pass 'opts' object!
         var sgRenderer = new SceneGraphRenderer(renderContext, null, {
             minNear: renderContext.minNear,
             far: opts.farPlane,
@@ -405,6 +413,15 @@ define([
             this.sgRenderer.nodes = [];
         };
     }
+
+    SceneGraphOverlayRenderer.prototype.setColorRamp = function(config) {
+        var effect = this.effectLibrary.getEffect('color-ramp');
+        effect.clearSteps();
+        effect.setSteps(config.steps);
+        effect.setAlphaThreshold(config.alphaThreshold);
+
+        this.sgRenderer.setProgram(effect.createProgram(this.tileManager.renderContext));
+    };
 
     /**************************************************************************************************************/
 
