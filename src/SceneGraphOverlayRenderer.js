@@ -68,8 +68,8 @@ define([
 
         // FIXXME: extend the MeshCacheClient to be a generic connection to a W3DS endpoint!
         this.meshCacheClient = this._setupMeshCacheClient(this.sgRenderer, {
-            // FIXXME: This has to be changed to the URL where the MeshCache stores its additional glTF files (.bin, images, shaders)!
-            baseUrl: 'http://localhost:9000/gltf/'
+            // Note: This is the URL where the MeshCache stores its additional glTF files (.bin, images, shaders)!
+            baseUrl: options.w3dsBaseUrl
         });
 
         this.meshRequests = this._setupMeshRequests(this.tileManager, this.meshCacheClient, 4);
