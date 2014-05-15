@@ -213,6 +213,10 @@ SceneGraph.Texture = function(url, doFlipY)
 	this.glTexture = null;
 	this.wrap = [ WebGLRenderingContext.REPEAT, WebGLRenderingContext.REPEAT ];
 	this.image = new Image();
+
+	// Explicitly allow loading of cross-domain images:
+	this.image.crossOrigin = "anonymous";
+
 	this.image.onerror = function()
 	{
 		console.log("Cannot load texture " + url);
