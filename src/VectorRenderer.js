@@ -172,7 +172,7 @@ VectorRenderer.prototype.removeGeometry = function(geometry)
 			var numGeometries = bucket.mainRenderable.remove(geometry);
 			if ( numGeometries == 0 )
 			{
-				bucket.mainRenderable.dispose(this.renderContext);
+				bucket.mainRenderable.dispose(this.tileManager.renderContext);
 				bucket.mainRenderable = null;
 			}
 		}
