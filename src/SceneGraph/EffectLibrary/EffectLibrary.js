@@ -1,9 +1,11 @@
 define([
 	'./TextureMaterialEffect',
-    './ColorRampEffect'
+    './ColorRampEffect',
+    './DebugEffect'
 ], function(
 	TextureMaterialEffect,
-	ColorRampEffect) {
+	ColorRampEffect,
+    DebugEffect) {
 
     var EffectLibrary = function() {
         this.effects = {};
@@ -23,7 +25,8 @@ define([
 
     EffectLibrary.prototype._loadDefaultEffects = function() {
     	this.addEffect('color-ramp', new ColorRampEffect());
-    	this.addEffect('texture-material', new TextureMaterialEffect());
+        this.addEffect('texture-material', new TextureMaterialEffect());
+    	this.addEffect('debug', new DebugEffect());
     };
 
     return EffectLibrary;
