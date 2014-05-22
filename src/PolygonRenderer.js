@@ -124,7 +124,10 @@ PolygonRenderable.prototype.add = function(geometry)
 {
 	var gl = this.bucket.renderer.tileManager.renderContext.gl;
 	var style = this.bucket.style;
-		
+
+	// MH: this is a quick fix for the PolygonRenderable to be able to remove the geometry in 'remvoe':
+	this.geometry = geometry;
+
 	// Create vertex buffer
 	this.vertexBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -232,6 +235,9 @@ PolygonRenderable.prototype.remove = function(geometry)
 	if ( this.geometry == geometry)
 	{
 		this.geometry = null;
+
+		// MH: this is a quickfix to enable removal of a PolygonRenderable feature
+		return 0;
 	}
 }
 
