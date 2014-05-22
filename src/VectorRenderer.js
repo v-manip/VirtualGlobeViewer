@@ -147,6 +147,37 @@ VectorRenderer.prototype.addGeometry = function(layer, geometry, style)
 /**
  	Remove a geometry from a vector renderer
  */
+VectorRenderer.prototype.removeGeometry = function(geometry)
+{
+	var tileIndices = geometry._tileIndices;
+
+	if ( tileIndices )
+	{
+		// Remove from tile
+		for ( var i = 0; i < tileIndices.length; i++ )
+		{
+			var tile = this.tileManager.level0Tiles[ tileIndices[i] ];
+			this.removeGeometryFromTile(geometry, tile);
+		}
+		// Remove from geometry arrays
+		this.levelZeroTiledGeometries.splice( this.levelZeroTiledGeometries.indexOf(geometry), 1 );
+		
+		 geometry._tileIndices = null;
+	}
+	else
+	{
+		var bucket = geometry._bucket;
+		if ( bucket.mainRenderable )
+		{
+			var numGeometries = bucket.mainRenderable.remove(geometry);
+			if ( numGeometries == 0 )
+			{
+				bucket.mainRenderable.dispose(this.tileManager.renderContext);
+				bucket.mainRenderable = null;
+			}
+		}
+	}
+}
 
 /**************************************************************************************************************/
 
