@@ -440,7 +440,7 @@ define([
     var Bucket = function(opts) {
         this.layer = opts.layer;
         this.renderer = opts.layer_renderer;
-        this.id = id;
+        this.id = opts.id;
 
         // TODO : hack
         // MH: used in VectorRendererManager::renderableSort

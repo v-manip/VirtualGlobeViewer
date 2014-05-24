@@ -1,3 +1,3 @@
 #!/bin/sh
-rsync -avp ~/Projekte/vmanip/WebClient-Framework/app/bower_components/virtualglobeviewer/src/* ~/Projekte/vmanip/VirtualGlobeViewer/src/
+rsync -avp ~/Coding/Projekte/02_work/vmanip/WebClient-Framework/app/bower_components/virtualglobeviewer/src/* ~/Coding/Projekte/02_work/vmanip/VirtualGlobeViewer/src/
 git status
